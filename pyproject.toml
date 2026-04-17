@@ -1,0 +1,51 @@
+[project]
+name = "proofmark-studio"
+version = "0.1.0"
+description = "Proofmark Studio hub page and launchpad for document workflow tools"
+authors = [{ name = "Sabbir Hossain", email = "hossain.sabbir17@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietary - Personal Use Only" }
+dependencies = [
+  "fastapi>=0.100",
+  "uvicorn[standard]>=0.23",
+  "python-dotenv>=1.0",
+]
+classifiers = [
+  "License :: Other/Proprietary License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Office/Business",
+  "Topic :: Utilities",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "httpx>=0.24",
+]
+
+[project.scripts]
+proofmark-studio = "web_app:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["web_app"]
+
+[tool.setuptools.packages.find]
+include = ["proofmark_studio*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = ["-q", "-p", "no:cacheprovider"]
+testpaths = ["tests"]
+
