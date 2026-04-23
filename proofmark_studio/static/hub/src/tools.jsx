@@ -40,7 +40,7 @@ const TOOLS = [
   { slug:'pdf-to-ppt',      title:'PDF → PPT',      group:'convert-from', cat:'convert',  status:'planned', icon:'pptx', desc:'Slide-ready PowerPoint output.' },
   { slug:'pdf-to-jpg',      title:'PDF → JPG',      group:'convert-from', cat:'convert',  status:'beta',    icon:'jpg',  desc:'Export pages as JPG images.', popular:true },
   { slug:'pdf-to-png',      title:'PDF → PNG',      group:'convert-from', cat:'convert',  status:'planned', icon:'png',  desc:'Export pages as PNG images.' },
-  { slug:'pdf-to-text',     title:'PDF → Text',     group:'convert-from', cat:'convert',  status:'planned', icon:'txt',  desc:'Extract clean text.' },
+  { slug:'pdf-to-text',     title:'PDF → Text',     group:'convert-from', cat:'convert',  status:'live',    icon:'txt',  desc:'Extract clean text.' },
   { slug:'pdf-to-markdown', title:'PDF → Markdown', group:'convert-from', cat:'convert',  status:'planned', icon:'md',   desc:'Markdown-friendly content.' },
   { slug:'pdf-to-html',     title:'PDF → HTML',     group:'convert-from', cat:'convert',  status:'planned', icon:'html', desc:'Web-ready HTML output.' },
 

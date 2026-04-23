@@ -84,7 +84,7 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "pdf-to-ppt":         _t("PDF to PPT",      "Slide-ready PowerPoint output.",                       "convert-from", "planned", "proofmark-pdf"),
     "pdf-to-jpg":         _t("PDF to JPG",      "Export pages as JPG images.",                          "convert-from", "beta",    "proofmark-pdf"),
     "pdf-to-png":         _t("PDF to PNG",      "Export pages as PNG images.",                          "convert-from", "planned", "proofmark-pdf"),
-    "pdf-to-text":        _t("PDF to Text",     "Extract clean text.",                                  "convert-from", "planned", "proofmark-pdf"),
+    "pdf-to-text":        _t("PDF to Text",     "Extract clean text.",                                  "convert-from", "live",    "proofmark-pdf", "/pdf-to-text"),
     "pdf-to-markdown":    _t("PDF to Markdown", "Markdown-friendly content.",                           "convert-from", "planned", "proofmark-pdf"),
     "pdf-to-html":        _t("PDF to HTML",     "Web-ready HTML output.",                               "convert-from", "planned", "proofmark-pdf"),
 
