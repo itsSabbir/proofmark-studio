@@ -108,11 +108,11 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "pdf-form-filler":    _t("Form Filler",     "Fill forms and flatten to PDF.",                       "edit",         "live",    "proofmark-pdf", "/pdf-form-filler"),
 
     # ── Sign & Secure ─────────────────────────────────────────────────
-    "sign-pdf":           _t("Sign PDF",          "Add signatures cleanly.",                            "sign",         "planned", "proofmark-pdf"),
-    "request-signatures": _t("Request Signatures","Route documents for signature.",                     "sign",         "planned", "proofmark-pdf"),
-    "unlock-pdf":         _t("Unlock PDF",        "Remove access restrictions when allowed.",           "sign",         "planned", "proofmark-pdf"),
-    "protect-pdf":        _t("Protect PDF",       "Add password and protection layers.",                "sign",         "planned", "proofmark-pdf"),
-    "flatten-pdf":        _t("Flatten PDF",       "Flatten annotations and interactive layers.",        "sign",         "planned", "proofmark-pdf"),
+    "sign-pdf":           _t("Sign PDF",          "Add signatures cleanly.",                            "sign",         "live",    "proofmark-pdf", "/sign-pdf"),
+    "request-signatures": _t("Request Signatures","Route documents for signature.",                     "sign",         "beta",    "proofmark-pdf"),
+    "unlock-pdf":         _t("Unlock PDF",        "Remove access restrictions when allowed.",           "sign",         "live",    "proofmark-pdf", "/unlock-pdf"),
+    "protect-pdf":        _t("Protect PDF",       "Add password and protection layers.",                "sign",         "live",    "proofmark-pdf", "/protect-pdf"),
+    "flatten-pdf":        _t("Flatten PDF",       "Flatten annotations and interactive layers.",        "sign",         "live",    "proofmark-pdf", "/flatten-pdf"),
 
     # ── Proofing (text-cleaner) ───────────────────────────────────────
     "text-inspection":      _t("Text Inspection",   "Hidden chars, normalize whitespace, typography.",  "proof",        "live",    "text-cleaner"),

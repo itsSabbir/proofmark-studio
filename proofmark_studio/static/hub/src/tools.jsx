@@ -64,11 +64,11 @@ const TOOLS = [
   { slug:'pdf-form-filler', title:'Form Filler',     group:'edit',  cat:'edit',  status:'live',    icon:'form',   desc:'Fill forms and flatten to PDF.' },
 
   // SIGN & SECURE
-  { slug:'sign-pdf',           title:'Sign PDF',          group:'sign', cat:'sign', status:'planned', icon:'sig',    desc:'Add signatures cleanly.', popular:true },
-  { slug:'request-signatures', title:'Request Signatures',group:'sign', cat:'sign', status:'planned', icon:'send',   desc:'Route documents for signature.' },
-  { slug:'unlock-pdf',         title:'Unlock PDF',        group:'sign', cat:'sign', status:'planned', icon:'unlock', desc:'Remove access restrictions when allowed.' },
-  { slug:'protect-pdf',        title:'Protect PDF',       group:'sign', cat:'sign', status:'planned', icon:'lock',   desc:'Add password and protection layers.' },
-  { slug:'flatten-pdf',        title:'Flatten PDF',       group:'sign', cat:'sign', status:'planned', icon:'layers', desc:'Flatten annotations and interactive layers.' },
+  { slug:'sign-pdf',           title:'Sign PDF',          group:'sign', cat:'sign', status:'live',    icon:'sig',    desc:'Add signatures cleanly.', popular:true },
+  { slug:'request-signatures', title:'Request Signatures',group:'sign', cat:'sign', status:'beta',    icon:'send',   desc:'Route documents for signature.' },
+  { slug:'unlock-pdf',         title:'Unlock PDF',        group:'sign', cat:'sign', status:'live',    icon:'unlock', desc:'Remove access restrictions when allowed.' },
+  { slug:'protect-pdf',        title:'Protect PDF',       group:'sign', cat:'sign', status:'live',    icon:'lock',   desc:'Add password and protection layers.' },
+  { slug:'flatten-pdf',        title:'Flatten PDF',       group:'sign', cat:'sign', status:'live',    icon:'layers', desc:'Flatten annotations and interactive layers.' },
 
   // PROOF
   { slug:'text-inspection',      title:'Text Inspection',   group:'proof', cat:'proof', status:'live', pin:true, icon:'aa',     desc:'Hidden chars, normalize whitespace, typography.', popular:true },
