@@ -2,6 +2,63 @@
 
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
+/* ---------- Shortcuts cheat-sheet ----------
+ * `?` opens this modal; it lists every keyboard binding the hub registers
+ * so users don't have to guess. Kept alongside the palette because they
+ * share a similar chrome shape. */
+const SHORTCUTS = [
+  { combo: ['Cmd+K', 'Ctrl+K'],  label: 'Open command palette' },
+  { combo: ['?'],                label: 'Open this cheat-sheet' },
+  { combo: ['H'],                label: 'Go to Home' },
+  { combo: ['G'],                label: 'Go to All tools' },
+  { combo: ['R'],                label: 'Go to Recent' },
+  { combo: ['P'],                label: 'Go to Pinned' },
+  { combo: ['W'],                label: 'Go to Workflow' },
+  { combo: ['M'],                label: 'Go to Platform map' },
+  { combo: ['Esc'],              label: 'Close dialogs / drawers' },
+];
+
+const ShortcutsModal = ({ open, onClose }) => {
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:110,
+      background:'color-mix(in oklab, var(--bg-inset) 60%, transparent)',
+      backdropFilter:'blur(6px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      paddingTop:'12vh', animation:'fadeInUp .14s ease',
+    }}>
+      <div onClick={e => e.stopPropagation()} role="dialog" aria-label="Keyboard shortcuts" style={{
+        width:'min(540px, 92vw)', borderRadius:16,
+        background:'var(--bg-elev)', border:'1px solid var(--border-strong)',
+        boxShadow:'var(--shadow-lg)', overflow:'hidden',
+      }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 18px', borderBottom:'1px solid var(--border)' }}>
+          <span style={{ fontSize:10.5, fontFamily:'var(--font-mono)', color:'var(--text-dim)', textTransform:'uppercase', letterSpacing:'.1em', fontWeight:600 }}>Keyboard shortcuts</span>
+          <Kbd style={{ marginLeft:'auto' }}>Esc</Kbd>
+        </div>
+        <div style={{ padding:'8px 0' }}>
+          {SHORTCUTS.map((s, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 18px', borderBottom: i === SHORTCUTS.length-1 ? 0 : '1px solid var(--border)' }}>
+              <div style={{ display:'flex', gap:6 }}>
+                {s.combo.map((c, j) => <Kbd key={j}>{c}</Kbd>)}
+              </div>
+              <span style={{ marginLeft:'auto', fontSize:13, color:'var(--text-muted)' }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ---------- Command Palette ---------- */
 const CommandPalette = ({ open, onClose, onRun }) => {
   const [q, setQ] = useState('');
@@ -585,6 +642,7 @@ const TweaksPanel = ({ open, values, onChange, onClose }) => {
 const App = () => {
   const [view, setView] = useState('home');
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState(null);
   const [group, setGroup] = useState('all');
@@ -621,6 +679,8 @@ const App = () => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(true); return; }
       if (document.activeElement?.tagName === 'INPUT') return;
       if (paletteOpen) return;
+      if (e.key === '?') { e.preventDefault(); setShortcutsOpen(v => !v); return; }
+      if (shortcutsOpen) return;
       if (e.key === 'g' || e.key === 'G') setView('tools');
       if (e.key === 'h' || e.key === 'H') setView('home');
       if (e.key === 'r' || e.key === 'R') setView('recent');
@@ -630,7 +690,7 @@ const App = () => {
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [paletteOpen]);
+  }, [paletteOpen, shortcutsOpen]);
 
   const onRun = (tool) => setSelectedTool(tool);
 
@@ -708,6 +768,7 @@ const App = () => {
       </main>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onRun={onRun}/>
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)}/>
       <ToolDrawer tool={selectedTool} onClose={() => setSelectedTool(null)}/>
       <TweaksPanel open={tweaksOpen} values={tweaks} onChange={updateTweak} onClose={() => setTweaksOpen(false)}/>
     </div>

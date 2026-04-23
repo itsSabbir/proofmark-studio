@@ -189,6 +189,26 @@ def test_markdown_lite_renders_links():
     assert '<a href="/">hub</a>' in html_out
 
 
+# ─── Phase 18.8: keyboard shortcuts cheat-sheet ────────────────────────
+
+def test_shortcuts_modal_component_present_in_app():
+    """? key opens a shortcuts cheat-sheet with documented bindings."""
+    r = client.get("/static/hub/src/app.jsx")
+    assert r.status_code == 200
+    src = r.text
+    assert "ShortcutsModal" in src
+    # The ? keypress toggles the modal.
+    assert "'?'" in src or '"?"' in src
+
+
+def test_shortcuts_modal_lists_known_bindings():
+    r = client.get("/static/hub/src/app.jsx")
+    src = r.text
+    # Each documented shortcut should live in the cheat-sheet payload.
+    for key in ("Cmd+K", "Ctrl+K", "Home", "All tools", "Recent", "Pinned"):
+        assert key in src, f"shortcuts cheat-sheet missing entry for {key!r}"
+
+
 def test_static_jsx_served():
     """JSX source files reachable at /static/hub/src/*."""
     r = client.get("/static/hub/src/app.jsx")
