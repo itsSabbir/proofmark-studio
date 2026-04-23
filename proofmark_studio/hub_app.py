@@ -7,6 +7,7 @@ and forwards clicks via redirects. See docs/architecture.md.
 from __future__ import annotations
 
 import argparse
+import html
 import os
 import socket
 import subprocess
@@ -17,8 +18,10 @@ from typing import Dict, Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 try:  # pragma: no cover - env loading is best-effort
     from dotenv import load_dotenv
@@ -27,6 +30,8 @@ try:  # pragma: no cover - env loading is best-effort
 except ImportError:
     pass
 
+from proofmark_studio import feature_flags as _flags
+from proofmark_studio import markdown_lite as _md
 from proofmark_studio import tool_registry as _registry
 
 # ─── Constants ────────────────────────────────────────────────────────────
@@ -50,6 +55,7 @@ KNOWN_PORTS = (8020, 8021, 8022, 8030, 8040)
 PACKAGE_ROOT = Path(__file__).resolve().parent
 STATIC_DIR = PACKAGE_ROOT / "static"
 HUB_INDEX = STATIC_DIR / "hub" / "index.html"
+DOCS_DIR = PACKAGE_ROOT.parent / "docs"
 
 # ─── FastAPI app ──────────────────────────────────────────────────────────
 app = FastAPI(title=APP_NAME, description=APP_DESCRIPTION)
@@ -145,29 +151,44 @@ def api_local_projects() -> JSONResponse:
 @app.get("/api/tools")
 def api_tools() -> JSONResponse:
     """Runtime tool registry \u2014 React catalog merges this into its display metadata.
-    Keeping URL+status server-side means the React catalog can't drift from reality."""
-    tools = {slug: {
-        "status": t["status"], "parent": t["parent"], "url": t["url"],
-        "title": t["title"], "group": t["group"],
-    } for slug, t in _registry.TOOLS.items()}
+    Keeping URL+status server-side means the React catalog can't drift from reality.
+    Per-tool env flags (TOOL_<SLUG>_ENABLED=false) demote the tile to 'planned'."""
+    tools: Dict[str, Dict[str, object]] = {}
+    counts = {"total": 0, "live": 0, "beta": 0, "planned": 0}
+    for slug, t in _registry.TOOLS.items():
+        entry: Dict[str, object] = {
+            "status": t["status"], "parent": t["parent"], "url": t["url"],
+            "title": t["title"], "group": t["group"],
+        }
+        if not _flags.is_enabled(slug):
+            # Flag-demoted: hide the live URL and mark paused for the React catalog badge.
+            entry["status"] = "planned"
+            entry["paused"] = True
+            entry["url"] = None
+        tools[slug] = entry
+        counts["total"] += 1
+        counts[entry["status"]] = counts.get(entry["status"], 0) + 1
     return JSONResponse({
         "service": "proofmark-studio",
         "tools": tools,
-        "counts": _registry.tool_counts(),
+        "counts": counts,
     })
 
 
 # ─── Tool router ─────────────────────────────────────────────────────────
 @app.get("/tool/{slug}", response_class=HTMLResponse)
 def tool_router(slug: str, request: Request):
-    """Live tools redirect to sibling app. Beta/planned render the stub page."""
+    """Live tools redirect to sibling app. Beta/planned or flag-off \u2192 stub."""
     entry = _registry.TOOLS.get(slug)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"Unknown tool: {slug}")
-    if entry["status"] == "live" and entry["url"]:
+    if entry["status"] == "live" and entry["url"] and _flags.is_enabled(slug):
         return RedirectResponse(url=entry["url"], status_code=307)
-    # Beta or planned \u2192 stub page
-    return HTMLResponse(content=_render_stub(slug, entry))
+    # Beta, planned, or flag-demoted \u2192 stub page
+    demoted = dict(entry)
+    if not _flags.is_enabled(slug):
+        demoted["status"] = "planned"
+    return HTMLResponse(content=_render_stub(slug, demoted))
 
 
 def _render_stub(slug: str, entry: Dict[str, object]) -> str:
@@ -193,12 +214,23 @@ def _render_stub(slug: str, entry: Dict[str, object]) -> str:
             f"and navigation model. The working implementation can land here without reshaping the hub."
         )
 
+    title_full = f"{entry['title']} \u2014 {APP_NAME}"
+    meta_desc = html.escape(desc, quote=True)
+    meta_title = html.escape(title_full, quote=True)
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{entry['title']} \u2014 {APP_NAME}</title>
+  <title>{title_full}</title>
+  <meta name="description" content="{meta_desc}">
+  <meta property="og:title" content="{meta_title}">
+  <meta property="og:description" content="{meta_desc}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{APP_NAME}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{meta_title}">
+  <meta name="twitter:description" content="{meta_desc}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -310,6 +342,180 @@ def terms() -> HTMLResponse:
     return _minimal_page("Terms of Use", "<p>ProofMark Studio is provided as-is for document work. You are responsible for the content you process. No warranty, no guarantees \u2014 you own the results.</p>")
 
 
+@app.exception_handler(StarletteHTTPException)
+async def pretty_http_exception(request: Request, exc: StarletteHTTPException):
+    """HTML routes get chrome-styled error pages; API/static stay JSON."""
+    path = request.url.path
+    if path.startswith("/api") or path.startswith("/static"):
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    return HTMLResponse(
+        content=_render_error_page(exc.status_code, exc.detail or ""),
+        status_code=exc.status_code,
+    )
+
+
+def _render_error_page(status_code: int, detail: str) -> str:
+    headline_map = {
+        404: ("404", "Page not found",
+              "That tool slug or path doesn't live in the hub. Jump back to the catalog to find what you need."),
+        500: ("500", "Something went sideways",
+              "An unexpected error hit the hub. Reload, or head back to the catalog while we look into it."),
+    }
+    code, headline, body_text = headline_map.get(
+        status_code,
+        (str(status_code), "Something went wrong", detail or "The hub couldn't complete that request."),
+    )
+    meta_desc = html.escape(f"{headline} \u2014 {APP_NAME}", quote=True)
+    page_title = f"{code} \u00b7 {headline} \u2014 {APP_NAME}"
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{page_title}</title>
+  <meta name="description" content="{meta_desc}">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --bg: #0a0a0b; --bg-elev: #111113; --border: #1f1f24; --border-strong: #2a2a31;
+      --text: #f1f1f3; --text-muted: #8a8a94; --text-dim: #5e5e68;
+      --accent: #7cb0ff; --accent-ink: #0a0a0b;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }}
+    a {{ color: inherit; text-decoration: none; }}
+    .topbar {{ display: flex; align-items: center; gap: 22px; padding: 16px 28px; border-bottom: 1px solid var(--border); }}
+    .brand {{ display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }}
+    .brand .dot {{ width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; }}
+    .brand .tag {{ color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }}
+    main {{ flex: 1; display: grid; place-items: center; padding: 40px 24px; }}
+    .card {{ max-width: 520px; text-align: center; }}
+    .code {{ font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); letter-spacing: .2em; text-transform: uppercase; margin: 0 0 10px; }}
+    h1 {{ font-family: var(--font-serif); font-weight: 400; font-size: clamp(44px, 7vw, 72px); line-height: 1; letter-spacing: -0.02em; margin: 0 0 16px; }}
+    p {{ font-size: 15px; line-height: 1.6; color: var(--text-muted); margin: 0 0 28px; }}
+    .row {{ display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }}
+    .btn {{ display: inline-flex; align-items: center; padding: 11px 16px; border-radius: 11px; font-size: 13px; font-weight: 600; border: 1px solid transparent; }}
+    .btn-primary {{ background: var(--accent); color: var(--accent-ink); }}
+    .btn-ghost {{ background: var(--bg-elev); color: var(--text); border-color: var(--border-strong); }}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand"><span class="dot">\u25C7</span><span>ProofMark<br><span class="tag">Studio \u00b7 Working hub</span></span></a>
+  </header>
+  <main>
+    <div class="card">
+      <p class="code">{code}</p>
+      <h1>{headline}</h1>
+      <p>{body_text}</p>
+      <div class="row">
+        <a class="btn btn-primary" href="/">Return to the hub</a>
+        <a class="btn btn-ghost" href="/#tools">Browse tools</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>"""
+
+
+@app.get("/about", response_class=HTMLResponse)
+def about_page() -> HTMLResponse:
+    return _render_markdown_page(
+        slug="about",
+        title="About",
+        description="About ProofMark Studio — a working hub for proofing, converting, signing, and transforming PDFs.",
+    )
+
+
+@app.get("/changelog", response_class=HTMLResponse)
+def changelog_page() -> HTMLResponse:
+    return _render_markdown_page(
+        slug="changelog",
+        title="Changelog",
+        description="Release notes and tool-promotion history for ProofMark Studio.",
+    )
+
+
+def _render_markdown_page(slug: str, title: str, description: str) -> HTMLResponse:
+    source = (DOCS_DIR / f"{slug}.md").read_text(encoding="utf-8")
+    body_html = _md.render(source)
+    title_full = f"{title} \u2014 {APP_NAME}"
+    meta_desc = html.escape(description, quote=True)
+    meta_title = html.escape(title_full, quote=True)
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{title_full}</title>
+  <meta name="description" content="{meta_desc}">
+  <meta property="og:title" content="{meta_title}">
+  <meta property="og:description" content="{meta_desc}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{APP_NAME}">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --bg: #0a0a0b; --bg-elev: #111113; --border: #1f1f24;
+      --text: #f1f1f3; --text-muted: #8a8a94; --text-dim: #5e5e68;
+      --accent: #7cb0ff; --accent-ink: #0a0a0b;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }}
+    a {{ color: var(--accent); text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+    .topbar {{ display: flex; align-items: center; gap: 22px; padding: 16px 28px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter: blur(14px); z-index: 10; }}
+    .brand {{ display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }}
+    .brand .dot {{ width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; }}
+    .brand .tag {{ color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }}
+    .nav {{ margin-left: auto; display: flex; gap: 18px; font-size: 13px; color: var(--text-muted); }}
+    .nav a {{ color: inherit; }}
+    .nav a:hover {{ color: var(--text); text-decoration: none; }}
+    main {{ max-width: 760px; margin: 0 auto; padding: 48px 32px 80px; line-height: 1.65; }}
+    main h1 {{ font-family: var(--font-serif); font-weight: 400; font-size: clamp(40px, 5vw, 60px); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 24px; }}
+    main h2 {{ font-family: var(--font-serif); font-weight: 400; font-size: 26px; margin: 40px 0 12px; letter-spacing: -0.01em; }}
+    main h3 {{ font-size: 16px; margin: 28px 0 8px; font-weight: 600; }}
+    main p {{ color: var(--text-muted); font-size: 15px; margin: 0 0 16px; }}
+    main ul {{ color: var(--text-muted); font-size: 15px; padding-left: 20px; margin: 0 0 16px; }}
+    main li {{ margin-bottom: 6px; }}
+    main code {{ font-family: var(--font-mono); background: var(--bg-elev); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--text); }}
+    footer {{ max-width: 760px; margin: 0 auto; padding: 24px 32px 40px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12.5px; display: flex; gap: 18px; flex-wrap: wrap; }}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand"><span class="dot">\u25C7</span><span>ProofMark<br><span class="tag">Studio \u00b7 Working hub</span></span></a>
+    <nav class="nav">
+      <a href="/">Studio</a>
+      <a href="/#tools">Tools</a>
+      <a href="/about">About</a>
+      <a href="/changelog">Changelog</a>
+    </nav>
+  </header>
+  <main>{body_html}</main>
+  <footer>
+    <span>ProofMark Studio</span>
+    <span style="margin-left:auto">/{slug}</span>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </footer>
+</body>
+</html>"""
+    return HTMLResponse(content=page)
+
+
 @app.get("/local-projects", response_class=HTMLResponse)
 def local_projects_page() -> HTMLResponse:
     body = (
@@ -330,11 +536,26 @@ def robots(request: Request) -> Response:
     return Response(content=body, media_type="text/plain")
 
 
+CONTENT_PAGES = ("/", "/about", "/changelog", "/privacy", "/terms", "/local-projects")
+
+
 @app.get("/sitemap.xml", response_class=Response)
 def sitemap(request: Request) -> Response:
+    """Enumerate content pages + every live/beta tool the hub advertises.
+
+    Flag-disabled tools (TOOL_<SLUG>_ENABLED=false) drop out so crawlers
+    don't index pages that resolve to a 'paused' stub.
+    """
     origin = str(request.base_url).rstrip("/")
-    urls = ["/", "/privacy", "/terms", "/local-projects"]
-    tags = "".join(f"<url><loc>{origin}{u}</loc></url>" for u in urls)
+    tool_paths = [
+        f"/tool/{slug}"
+        for slug, entry in _registry.TOOLS.items()
+        if entry["status"] in {"live", "beta"} and _flags.is_enabled(slug)
+    ]
+    tags = "".join(
+        f"<url><loc>{origin}{p}</loc></url>"
+        for p in (*CONTENT_PAGES, *sorted(tool_paths))
+    )
     body = (
         "<?xml version='1.0' encoding='UTF-8'?>"
         "<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>" + tags + "</urlset>"

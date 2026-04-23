@@ -1,83 +1,125 @@
 # Adding a tool to the catalog
 
-Two files, same slug. That's it.
+Since **Phase 10** every tool is a `ToolService` with a typed result + a feature
+flag + observability. Six files in a predictable shape — the contract test
+catches anything you forget.
 
-## Recipe
+## Recipe (post-Phase-10)
 
-### 1. `proofmark_studio/tool_registry.py`
+### 1. Service file — `tool_services/<slug>.py` (parent repo)
 
-Add an entry under the right group:
+Implement the `ToolService` protocol:
+
+```python
+from typing import Any, Mapping, Optional
+from proofmark_pdf import pdf_ops  # or text_cleaner for text tools
+from proofmark_pdf.errors import ErrorCode, as_err
+from proofmark_pdf.tool_services import Err, Ok, Result, ToolMeta
+
+
+class MyNewToolService:
+    slug = "my-new-tool"
+
+    def describe(self) -> ToolMeta:
+        return ToolMeta(
+            slug=self.slug, title="My New Tool", group="organize",
+            status="live", chainable=True,
+            description="One-line description.",
+        )
+
+    def validate(self, payload: Mapping[str, Any]) -> Optional[Err]:
+        if not payload.get("pdf"):
+            return as_err(ErrorCode.INVALID_PDF)
+        return None
+
+    def run(self, payload: Mapping[str, Any]) -> Result:
+        err = self.validate(payload)
+        if err is not None:
+            return err
+        # ... call the pure-ops function ...
+        return Ok(data={"pdf_bytes": result_bytes})
+```
+
+Structured returns — no bare booleans, no raw exceptions escaping. The web
+layer maps `Err.code` onto `to_http_detail()` for a stable JSON shape.
+
+### 2. Register it — `tool_services/registry.py`
+
+Append an instance to `all_services()`. One line.
+
+### 3. Tests — `tests/test_<slug>.py`
+
+Mandatory cases from the per-tool checklist:
+
+- Empty input → the right `ErrorCode`
+- Password-protected PDF → `PDF_PASSWORD_REQUIRED` (if the tool reads PDFs)
+- Oversized input → `PDF_TOO_LARGE` / `INPUT_TOO_LARGE`
+- Happy path → correctness asserted on output
+- One regression test per known bug class
+
+The generic contract test (`tests/test_tool_contract.py`) already asserts
+protocol conformance, describe-shape, and empty-payload-returns-Err — a new
+service fails that automatically if you forget anything.
+
+### 4. Hub catalog — `proofmark-studio/proofmark_studio/tool_registry.py`
 
 ```python
 "my-new-tool": _t(
-    "My New Tool",                       # title (shown in tile + drawer + stub)
-    "One-line description of the tool.", # desc
-    "organize",                          # group: organize | convert-from | convert-to | edit | sign | proof | ai | workflow
-    "planned",                           # status: live | beta | planned
-    "proofmark-pdf",                     # parent: proofmark-pdf | text-cleaner | None
-    "/my-new-tool",                      # path (only used when status='live')
+    "My New Tool",                       # title
+    "One-line description.",             # desc
+    "organize",                          # group
+    "planned",                           # start as planned; flip to live after smoke
+    "proofmark-pdf",                     # parent (None for hub-native)
+    "/my-new-tool",                      # path on parent app (only used when status='live')
 ),
 ```
 
-Status semantics:
-- `live` — hub redirects to `parent_base + path`. The parent app must implement that path.
-- `beta` — stub page with "Beta" badge + "Open [Parent Tool]" button.
-- `planned` — stub page with "Planned" badge.
-
-URL is computed automatically from `PROOFMARK_PDF_BASE` / `PROOFMARK_TEXT_BASE` env vars — local dev gets `http://127.0.0.1:8010/my-new-tool`, Vercel prod gets `/pdf/my-new-tool` (relative, same-origin via rewrite).
-
-### 2. `proofmark_studio/static/hub/src/tools.jsx`
-
-Add a matching tile:
+### 5. React tile — `static/hub/src/tools.jsx`
 
 ```js
 { slug:'my-new-tool', title:'My New Tool', group:'organize', cat:'organize',
   status:'planned', icon:'merge',
-  desc:'One-line description of the tool.' },
+  desc:'One-line description.' },
 ```
 
-Must-match fields: `slug`, `title`, `group`, `status`, `desc`. Other fields are display-only:
-- `cat` — category tab (`organize` | `convert` | `edit` | `sign` | `proof` | `ai` | `workflow`)
-- `icon` — illustration key (see `illust.jsx` for available names: `merge`, `split`, `docx`, `sig`, `aa`, `ai`, etc.)
-- `popular: true` — promotes to the "Popular right now" strip
-- `pin: true` — shows in sidebar's pinned list
+### 6. Feature flag — `docs/feature-flags.md`
 
-### 3. That's it.
+Add one line under the right group:
 
-No build step. Refresh the hub at `http://127.0.0.1:8020/` and your tile appears. Click it → drawer opens → "Open preview" → lands on the stub page (or redirects to live parent if status=live).
+```
+- `my-new-tool` → `TOOL_MY_NEW_TOOL_ENABLED`
+```
 
-## Promoting a tool from `planned` → `beta` → `live`
+No code — the flag module derives the env var from the slug automatically.
 
-- **planned → beta**: flip `status` in both files. Stub page still renders; pill reads "Beta".
-- **beta → live**: flip `status` + ensure `path` in `tool_registry.py` points at a real route in the parent app.
+## Promotion path
 
-No code gymnastics — the catalog redraws, the router routes.
+- **planned → live**: flip `status` in `tool_registry.py` and `tools.jsx`;
+  smoke 3 real documents; commit `feat(<slug>): live`.
+- **live → paused**: set `TOOL_<SLUG>_ENABLED=false`. Tile shows "Paused" in
+  ≤60s, no redeploy. Fix forward, drop the env var to re-enable.
 
-## Adding a new group / category
+## Observability — free
 
-Rare. If you need a new top-level bucket (e.g. "Analytics"):
+Services wrapped by `instrument_all()` emit `[tool:<slug>]` start + end logs
+and a JSON sidecar on stderr with `{slug, phase, outcome, duration_ms, inputs,
+context}`. See `docs/observability.md`.
 
-1. Add to `GROUPS` dict in `tool_registry.py` with a `label` and `tone` (hex).
-2. Add matching entry to `GROUPS` array in `tools.jsx` with a `pastel` background hex.
-3. Add matching entry to `CATEGORIES` in `tools.jsx` if you want a filter chip for it.
+## Chainability — Phase 20
 
-## Adding a new parent app (beyond PDF and Text Inspection)
+If the tool's input and output are both PDFs, set `chainable=True` in
+`describe()`. The chain executor (v1.1) iterates only chainable services.
 
-Bigger change. Touch points:
+Split-pdf and similar many-output tools should stay `chainable=False` until
+Phase 20 defines a many-out contract.
 
-1. **New sibling folder** at `tools/proofmark-<name>/` — FastAPI app, own port.
-2. **`tool_registry.py`**:
-   - Add helper `_<name>(path)` that builds URLs.
-   - Add to `PARENT_URLS` and `PARENT_LABELS`.
-3. **`hub_app.py`**: add `/go/<name>` redirect route.
-4. **`scripts/launch-all.ps1`**: add entry to `$APPS` array.
-5. **New env var**: `PROOFMARK_<NAME>_BASE` with localhost default.
-6. **Phase 9 (prod)**: add Vercel project + rewrite rule in `vercel.json`.
+## Checklist before committing
 
-## Checklist before committing a new tool
-
-- [ ] Entry in `tool_registry.py` with correct status
-- [ ] Matching tile in `tools.jsx` with same slug
-- [ ] Test it in the hub: tile renders? Drawer opens? Click "Open" routes correctly?
-- [ ] If live: parent app actually serves the path
-- [ ] `pytest` green in hub + parent sibling
+- [ ] `tests/test_<slug>.py` green (red first, green second)
+- [ ] Registered in `tool_services/registry.py`
+- [ ] Entry in `proofmark_studio/tool_registry.py` (hub)
+- [ ] Tile in `static/hub/src/tools.jsx` (hub)
+- [ ] Env-var listed in `docs/feature-flags.md`
+- [ ] Contract test green (`tests/test_tool_contract.py`)
+- [ ] Manual smoke on 3 real documents
+- [ ] Commit: `feat(<slug>): <one-line-why>`

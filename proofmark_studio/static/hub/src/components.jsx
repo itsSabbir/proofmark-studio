@@ -81,13 +81,17 @@ const Glyph = ({ name, size = 16, stroke = 1.6 }) => {
 };
 
 /* ---------- Status pill ---------- */
-const StatusPill = ({ status, size='sm' }) => {
+const StatusPill = ({ status, size='sm', paused=false }) => {
   const map = {
     live:    { label:'Live',    color:'var(--live)' },
     beta:    { label:'Beta',    color:'var(--beta)' },
     planned: { label:'Planned', color:'var(--planned)' },
+    paused:  { label:'Paused',  color:'var(--beta)' },
   };
-  const s = map[status] || map.planned;
+  // Flag-downgraded live tools carry paused=true so the pill reads "Paused"
+  // instead of collapsing silently into "Planned".
+  const key = paused ? 'paused' : status;
+  const s = map[key] || map.planned;
   const pad = size === 'sm' ? '2px 8px' : '4px 10px';
   return (
     <span style={{
