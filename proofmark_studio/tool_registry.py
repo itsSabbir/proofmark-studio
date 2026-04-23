@@ -98,14 +98,14 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "pdf-ocr":            _t("PDF OCR",         "Make scanned PDFs searchable.",                        "convert-to",   "live",    "proofmark-pdf", "/pdf-ocr"),
 
     # ── View & Edit ───────────────────────────────────────────────────
-    "edit-pdf":           _t("Edit PDF",        "Edit PDF content and layout inline.",                  "edit",         "planned", "proofmark-pdf"),
+    "edit-pdf":           _t("Edit PDF",        "Edit PDF content and layout inline.",                  "edit",         "beta",    "proofmark-pdf"),
     "pdf-annotator":      _t("Annotator",       "Comments, highlights, and callouts.",                  "edit",         "beta",    "proofmark-pdf"),
-    "pdf-reader":         _t("Reader",          "Focused reading experience.",                          "edit",         "planned", "proofmark-pdf"),
+    "pdf-reader":         _t("Reader",          "Focused reading experience.",                          "edit",         "beta",    "proofmark-pdf"),
     "number-pages":       _t("Number Pages",    "Add running page numbers.",                            "edit",         "live",    "proofmark-pdf", "/number-pages"),
-    "crop-pdf":           _t("Crop PDF",        "Crop edges and reset trim.",                           "edit",         "planned", "proofmark-pdf"),
-    "redact-pdf":         _t("Redact PDF",      "Permanently remove sensitive content.",                "edit",         "planned", "proofmark-pdf"),
-    "watermark-pdf":      _t("Watermark PDF",   "Brand, legal, and draft watermarks.",                  "edit",         "planned", "proofmark-pdf"),
-    "pdf-form-filler":    _t("Form Filler",     "Fill forms and flatten to PDF.",                       "edit",         "planned", "proofmark-pdf"),
+    "crop-pdf":           _t("Crop PDF",        "Crop edges and reset trim.",                           "edit",         "live",    "proofmark-pdf", "/crop-pdf"),
+    "redact-pdf":         _t("Redact PDF",      "Permanently remove sensitive content.",                "edit",         "live",    "proofmark-pdf", "/redact-pdf"),
+    "watermark-pdf":      _t("Watermark PDF",   "Brand, legal, and draft watermarks.",                  "edit",         "live",    "proofmark-pdf", "/watermark-pdf"),
+    "pdf-form-filler":    _t("Form Filler",     "Fill forms and flatten to PDF.",                       "edit",         "live",    "proofmark-pdf", "/pdf-form-filler"),
 
     # ── Sign & Secure ─────────────────────────────────────────────────
     "sign-pdf":           _t("Sign PDF",          "Add signatures cleanly.",                            "sign",         "planned", "proofmark-pdf"),

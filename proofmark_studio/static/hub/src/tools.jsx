@@ -54,14 +54,14 @@ const TOOLS = [
   { slug:'pdf-ocr',         title:'PDF OCR',        group:'convert-to',   cat:'convert',  status:'live',    icon:'ocr',  desc:'Make scanned PDFs searchable.' },
 
   // VIEW & EDIT
-  { slug:'edit-pdf',        title:'Edit PDF',        group:'edit',  cat:'edit',  status:'planned', icon:'pencil', desc:'Edit PDF content and layout inline.' },
+  { slug:'edit-pdf',        title:'Edit PDF',        group:'edit',  cat:'edit',  status:'beta',    icon:'pencil', desc:'Edit PDF content and layout inline.' },
   { slug:'pdf-annotator',   title:'Annotator',       group:'edit',  cat:'edit',  status:'beta',    icon:'pen',    desc:'Comments, highlights, and callouts.' },
-  { slug:'pdf-reader',      title:'Reader',          group:'edit',  cat:'edit',  status:'planned', icon:'book',   desc:'Focused reading experience.' },
+  { slug:'pdf-reader',      title:'Reader',          group:'edit',  cat:'edit',  status:'beta',    icon:'book',   desc:'Focused reading experience.' },
   { slug:'number-pages',    title:'Number Pages',    group:'edit',  cat:'edit',  status:'live',    icon:'hash',   desc:'Add running page numbers.' },
-  { slug:'crop-pdf',        title:'Crop PDF',        group:'edit',  cat:'edit',  status:'planned', icon:'crop',   desc:'Crop edges and reset trim.' },
-  { slug:'redact-pdf',      title:'Redact PDF',      group:'edit',  cat:'edit',  status:'planned', icon:'redact', desc:'Permanently remove sensitive content.' },
-  { slug:'watermark-pdf',   title:'Watermark PDF',   group:'edit',  cat:'edit',  status:'planned', icon:'water',  desc:'Brand, legal, and draft watermarks.' },
-  { slug:'pdf-form-filler', title:'Form Filler',     group:'edit',  cat:'edit',  status:'planned', icon:'form',   desc:'Fill forms and flatten to PDF.' },
+  { slug:'crop-pdf',        title:'Crop PDF',        group:'edit',  cat:'edit',  status:'live',    icon:'crop',   desc:'Crop edges and reset trim.' },
+  { slug:'redact-pdf',      title:'Redact PDF',      group:'edit',  cat:'edit',  status:'live',    icon:'redact', desc:'Permanently remove sensitive content.' },
+  { slug:'watermark-pdf',   title:'Watermark PDF',   group:'edit',  cat:'edit',  status:'live',    icon:'water',  desc:'Brand, legal, and draft watermarks.' },
+  { slug:'pdf-form-filler', title:'Form Filler',     group:'edit',  cat:'edit',  status:'live',    icon:'form',   desc:'Fill forms and flatten to PDF.' },
 
   // SIGN & SECURE
   { slug:'sign-pdf',           title:'Sign PDF',          group:'sign', cat:'sign', status:'planned', icon:'sig',    desc:'Add signatures cleanly.', popular:true },
