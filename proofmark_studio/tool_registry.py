@@ -101,7 +101,7 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "edit-pdf":           _t("Edit PDF",        "Edit PDF content and layout inline.",                  "edit",         "planned", "proofmark-pdf"),
     "pdf-annotator":      _t("Annotator",       "Comments, highlights, and callouts.",                  "edit",         "beta",    "proofmark-pdf"),
     "pdf-reader":         _t("Reader",          "Focused reading experience.",                          "edit",         "planned", "proofmark-pdf"),
-    "number-pages":       _t("Number Pages",    "Add running page numbers.",                            "edit",         "planned", "proofmark-pdf"),
+    "number-pages":       _t("Number Pages",    "Add running page numbers.",                            "edit",         "live",    "proofmark-pdf", "/number-pages"),
     "crop-pdf":           _t("Crop PDF",        "Crop edges and reset trim.",                           "edit",         "planned", "proofmark-pdf"),
     "redact-pdf":         _t("Redact PDF",      "Permanently remove sensitive content.",                "edit",         "planned", "proofmark-pdf"),
     "watermark-pdf":      _t("Watermark PDF",   "Brand, legal, and draft watermarks.",                  "edit",         "planned", "proofmark-pdf"),
