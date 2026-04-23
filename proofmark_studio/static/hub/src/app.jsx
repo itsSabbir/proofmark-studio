@@ -91,7 +91,7 @@ const CommandPalette = ({ open, onClose, onRun }) => {
                       <div style={{ fontSize:13.5, fontWeight:500 }}>{t.title}</div>
                       <div style={{ fontSize:11.5, color:'var(--text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.desc}</div>
                     </div>
-                    <StatusPill status={t.status}/>
+                    <StatusPill status={t.status} paused={t.paused}/>
                     <Glyph name="arrow" size={14}/>
                   </button>
                 );
@@ -132,7 +132,7 @@ const ToolDrawer = ({ tool, onClose }) => {
           background:`linear-gradient(180deg, color-mix(in oklab, ${tone} 10%, var(--bg-elev)) 0%, var(--bg-elev) 100%)`,
         }}>
           <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-            <StatusPill status={tool.status} size="md"/>
+            <StatusPill status={tool.status} size="md" paused={tool.paused}/>
             <span style={{ fontSize:11, fontFamily:'var(--font-mono)', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>{grp?.label}</span>
             <button onClick={onClose} style={{ marginLeft:'auto', padding:7, borderRadius:7, background:'transparent', border:'1px solid var(--border)', color:'var(--text-muted)', cursor:'pointer', display:'grid', placeItems:'center' }}>
               <Glyph name="x" size={14}/>
@@ -237,7 +237,7 @@ const ToolTile = ({ tool, onOpen }) => {
       <div style={{ fontSize:15, fontWeight:600, letterSpacing:'-.01em', marginBottom:4 }}>{tool.title}</div>
       <div style={{ fontSize:12.5, color:'var(--text-muted)', lineHeight:1.5, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{tool.desc}</div>
       <div style={{ marginTop:'auto', paddingTop:10, display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%' }}>
-        <StatusPill status={tool.status}/>
+        <StatusPill status={tool.status} paused={tool.paused}/>
         <div style={{ width:26, height:26, borderRadius:999, background: hover ? tone : 'var(--bg-inset)', color: hover ? '#0a0a0b' : 'var(--text-muted)', display:'grid', placeItems:'center', transition:'background .15s, color .15s' }}>
           <Glyph name="arrow" size={13}/>
         </div>
@@ -730,6 +730,8 @@ const __pmSyncFromBackend = async () => {
       if (!s) return;
       if (s.status) t.status = s.status;
       if (s.url)    t.url    = s.url;  // drawer keeps this for potential deep-link
+      // Flag-downgraded live tools carry `paused: true` so the pill can show it.
+      if (s.paused) t.paused = true;
     });
   } catch (err) {
     console.warn('[registry] sync failed, using hardcoded catalog', err);

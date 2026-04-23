@@ -27,6 +27,7 @@ try:  # pragma: no cover - env loading is best-effort
 except ImportError:
     pass
 
+from proofmark_studio import feature_flags as _flags
 from proofmark_studio import tool_registry as _registry
 
 # ─── Constants ────────────────────────────────────────────────────────────
@@ -145,29 +146,44 @@ def api_local_projects() -> JSONResponse:
 @app.get("/api/tools")
 def api_tools() -> JSONResponse:
     """Runtime tool registry \u2014 React catalog merges this into its display metadata.
-    Keeping URL+status server-side means the React catalog can't drift from reality."""
-    tools = {slug: {
-        "status": t["status"], "parent": t["parent"], "url": t["url"],
-        "title": t["title"], "group": t["group"],
-    } for slug, t in _registry.TOOLS.items()}
+    Keeping URL+status server-side means the React catalog can't drift from reality.
+    Per-tool env flags (TOOL_<SLUG>_ENABLED=false) demote the tile to 'planned'."""
+    tools: Dict[str, Dict[str, object]] = {}
+    counts = {"total": 0, "live": 0, "beta": 0, "planned": 0}
+    for slug, t in _registry.TOOLS.items():
+        entry: Dict[str, object] = {
+            "status": t["status"], "parent": t["parent"], "url": t["url"],
+            "title": t["title"], "group": t["group"],
+        }
+        if not _flags.is_enabled(slug):
+            # Flag-demoted: hide the live URL and mark paused for the React catalog badge.
+            entry["status"] = "planned"
+            entry["paused"] = True
+            entry["url"] = None
+        tools[slug] = entry
+        counts["total"] += 1
+        counts[entry["status"]] = counts.get(entry["status"], 0) + 1
     return JSONResponse({
         "service": "proofmark-studio",
         "tools": tools,
-        "counts": _registry.tool_counts(),
+        "counts": counts,
     })
 
 
 # ─── Tool router ─────────────────────────────────────────────────────────
 @app.get("/tool/{slug}", response_class=HTMLResponse)
 def tool_router(slug: str, request: Request):
-    """Live tools redirect to sibling app. Beta/planned render the stub page."""
+    """Live tools redirect to sibling app. Beta/planned or flag-off \u2192 stub."""
     entry = _registry.TOOLS.get(slug)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"Unknown tool: {slug}")
-    if entry["status"] == "live" and entry["url"]:
+    if entry["status"] == "live" and entry["url"] and _flags.is_enabled(slug):
         return RedirectResponse(url=entry["url"], status_code=307)
-    # Beta or planned \u2192 stub page
-    return HTMLResponse(content=_render_stub(slug, entry))
+    # Beta, planned, or flag-demoted \u2192 stub page
+    demoted = dict(entry)
+    if not _flags.is_enabled(slug):
+        demoted["status"] = "planned"
+    return HTMLResponse(content=_render_stub(slug, demoted))
 
 
 def _render_stub(slug: str, entry: Dict[str, object]) -> str:
