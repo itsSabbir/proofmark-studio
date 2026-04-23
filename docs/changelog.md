@@ -6,7 +6,11 @@ Release notes and tool-promotion history. Dates follow the commit order on `main
 
 - Sitemap now enumerates every live and beta tool, respecting feature flags.
 - Tool stub pages carry `meta description`, OpenGraph, and Twitter card tags so social shares aren't naked.
-- `/about` and `/changelog` pages render from first-party Markdown.
+- `/about` and `/changelog` pages render from first-party Markdown via a tiny safe `markdown_lite` module — no new dependency added.
+- `?` key opens a keyboard-shortcuts cheat-sheet that documents every binding the hub registers.
+- 404 and 500 pages render chrome-matched HTML for humans; `/api` and `/static` keep the JSON error contract for programmatic callers.
+
+Still blocked on Phase 17 infra (database + auth): Stripe plans, usage tracking, and the dashboard.
 
 ## Phase 16 — AI family (complete)
 

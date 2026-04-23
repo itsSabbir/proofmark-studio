@@ -457,23 +457,23 @@ If any check fails, **stop and fix before proceeding.** Don't build new tools on
 - [ ] Tests + deploy
 
 ### 18.4 Error pages (1 day)
-- [ ] Pretty 404/500 with hub chrome
-- [ ] Tests
+- [x] Pretty 404/500 with hub chrome
+- [x] Tests
 
 ### 18.5 OG images (1 day)
 - [ ] Dynamic `/og/<slug>.png` renders tool-specific social card
 - [ ] Test in Twitter/LinkedIn validators
 
 ### 18.6 Sitemap + SEO (1 day)
-- [ ] Auto-regenerate sitemap from live tools
-- [ ] `meta description` per tool page
-- [ ] Submit to Google Search Console
+- [x] Auto-regenerate sitemap from live tools
+- [x] `meta description` per tool page
+- [ ] Submit to Google Search Console (manual, post-deploy)
 
 ### 18.7 About + changelog (1 day)
-- [ ] `/about` + `/changelog` (markdown-driven)
+- [x] `/about` + `/changelog` (markdown-driven)
 
 ### 18.8 Keyboard shortcuts cheat-sheet (½ day)
-- [ ] `?` opens modal listing shortcuts
+- [x] `?` opens modal listing shortcuts
 
 ### 18.9 Phase review (½ day)
 - [ ] Sign up → upgrade Pro → run 50 ops → see dashboard → cancel → works
