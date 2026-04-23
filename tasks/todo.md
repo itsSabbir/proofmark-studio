@@ -25,7 +25,13 @@ https://proofmark-studio-ij7v4i8xk-sabbirs-projects-eab46ba9.vercel.app/
 - `C:\Users\sabbir\Dev\GitHub\tools\proofmark-pdf` (sibling)
 - `C:\Users\sabbir\Dev\GitHub\tools\text-cleaner` (sibling)
 
-**Currently: 8 tools live, 41 stubbed (6 beta + 35 planned).**
+**Currently: 36 tools live, 8 beta, 5 planned.**
+
+**Catalog display policy:** live-only by default — users only see tiles that
+work end-to-end. Beta + planned tiles stay registered for the roadmap but
+are hidden from every user-facing surface. Flip `PROOFMARK_SHOW_ALL_TILES=true`
+for local dev / plan review to restore the full catalog. See
+`docs/feature-flags.md#catalog-display-mode`.
 
 ---
 
@@ -474,6 +480,20 @@ If any check fails, **stop and fix before proceeding.** Don't build new tools on
 
 ### 18.8 Keyboard shortcuts cheat-sheet (½ day)
 - [x] `?` opens modal listing shortcuts
+
+### 18.10 Live-only catalog policy (½ day) ✅
+> Rule: users only ever see tiles that work end-to-end. Beta + planned
+> stay in the registry for the roadmap but are hidden from every public
+> surface. A single env var (`PROOFMARK_SHOW_ALL_TILES=true`) restores
+> the full catalog for local dev and plan review.
+
+- [x] `feature_flags.show_all_tiles()` + `is_displayed(slug, entry)` helpers
+- [x] `/api/tools` adds `display: bool` per entry + `display_counts` block (backwards-compatible with the Phase 10.5 `counts` contract)
+- [x] `/tool/{slug}` returns 404 for non-live tiles in live-only mode; flag-off on a live tile still renders the paused stub so bookmarked links explain themselves
+- [x] `/sitemap.xml` only lists displayed tools
+- [x] SPA: sync marks `t.hidden` from server response; `__pmVisible()` helper filters every render surface (hero counts, popular strip, grouped catalog, group chips, pinned sidebar, pinned view, workflow view, command palette)
+- [x] Docs: `docs/feature-flags.md` gains a _Catalog display mode_ section with env-var table + behaviour matrix
+- [x] Tests: 11 new assertions covering defaults, roadmap mode, per-tool flag interaction, SPA filter surface
 
 ### 18.9 Phase review (½ day)
 - [ ] Sign up → upgrade Pro → run 50 ops → see dashboard → cancel → works

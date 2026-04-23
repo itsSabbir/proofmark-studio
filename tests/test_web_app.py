@@ -96,8 +96,9 @@ def test_sitemap_enumerates_live_tools():
         assert f"/tool/{slug}" in r.text, f"sitemap missing /tool/{slug}"
 
 
-def test_sitemap_enumerates_beta_tools():
-    """Beta tools live in the catalog and deserve indexing too."""
+def test_sitemap_enumerates_beta_tools_in_roadmap_mode(monkeypatch):
+    """Roadmap mode (PROOFMARK_SHOW_ALL_TILES=true) reveals beta tools."""
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
     from proofmark_studio import tool_registry as reg
     r = client.get("/sitemap.xml")
     beta_slugs = [s for s, t in reg.TOOLS.items() if t["status"] == "beta"]
@@ -120,8 +121,9 @@ def test_sitemap_includes_content_pages():
         assert path in r.text, f"sitemap missing content page {path}"
 
 
-def test_stub_page_has_meta_description():
+def test_stub_page_has_meta_description(monkeypatch):
     """Phase 18.6: every tool stub page carries a <meta name='description'>."""
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
     r = client.get("/tool/project-intake")
     assert r.status_code == 200
     assert '<meta name="description"' in r.text
@@ -129,8 +131,9 @@ def test_stub_page_has_meta_description():
     assert "project setup" in r.text.lower() or "source files" in r.text.lower()
 
 
-def test_stub_page_has_og_tags():
+def test_stub_page_has_og_tags(monkeypatch):
     """OpenGraph tags so social shares don't look naked."""
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
     r = client.get("/tool/edit-pdf")
     assert 'property="og:title"' in r.text
     assert 'property="og:description"' in r.text
@@ -242,6 +245,110 @@ def test_error_page_has_meta_description():
     assert '<meta name="description"' in r.text
 
 
+# ─── Display filter: only-live-tiles policy ────────────────────────────
+
+def test_api_tools_defaults_to_live_only_display():
+    """By default (PROOFMARK_SHOW_ALL_TILES unset) every entry carries a
+    display flag, live=True and beta/planned=False."""
+    r = client.get("/api/tools")
+    tools = r.json()["tools"]
+    assert tools["merge-pdf"]["display"] is True
+    # Beta tile (Office-to-PDF requires self-host) stays hidden by default.
+    assert tools["word-to-pdf"]["display"] is False
+    # Planned workflow tile stays hidden.
+    assert tools["project-intake"]["display"] is False
+
+
+def test_api_tools_display_counts_match_displayed(monkeypatch):
+    """counts stays raw-registry; display_counts reflects what users see."""
+    monkeypatch.delenv("PROOFMARK_SHOW_ALL_TILES", raising=False)
+    payload = client.get("/api/tools").json()
+    display_counts = payload["display_counts"]
+    # Live-only default: displayed universe = live tools.
+    assert display_counts["total"] == display_counts["live"]
+    assert display_counts["beta"] == 0
+    assert display_counts["planned"] == 0
+    # Raw counts preserved (backwards compat with Phase 10.5 contract).
+    assert payload["counts"]["beta"] >= 1
+    assert payload["counts"]["planned"] >= 1
+
+
+def test_api_tools_respects_show_all_tiles_env(monkeypatch):
+    """Dev/roadmap mode: PROOFMARK_SHOW_ALL_TILES=true reveals beta+planned."""
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
+    r = client.get("/api/tools")
+    tools = r.json()["tools"]
+    counts = r.json()["counts"]
+    assert tools["word-to-pdf"]["display"] is True
+    assert tools["project-intake"]["display"] is True
+    assert counts["beta"] >= 1
+    assert counts["planned"] >= 1
+
+
+def test_tool_router_404s_beta_by_default():
+    """Live-only default — beta tool URLs don't resolve for end users."""
+    r = client.get("/tool/word-to-pdf")
+    assert r.status_code == 404
+
+
+def test_tool_router_serves_beta_when_show_all_tiles(monkeypatch):
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
+    r = client.get("/tool/word-to-pdf")
+    assert r.status_code == 200
+    assert "Word to PDF" in r.text
+    assert "Beta" in r.text
+
+
+def test_sitemap_lists_only_displayed_tools_by_default(monkeypatch):
+    monkeypatch.delenv("PROOFMARK_SHOW_ALL_TILES", raising=False)
+    r = client.get("/sitemap.xml")
+    # Live tool present.
+    assert "/tool/merge-pdf" in r.text
+    # Beta + planned drop out.
+    assert "/tool/word-to-pdf" not in r.text
+    assert "/tool/project-intake" not in r.text
+
+
+def test_sitemap_includes_beta_when_show_all_tiles(monkeypatch):
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
+    r = client.get("/sitemap.xml")
+    assert "/tool/word-to-pdf" in r.text
+
+
+def test_spa_filters_hidden_tiles_in_every_render_surface():
+    """After /api/tools sync marks a slug as non-displayed, the SPA must
+    drop it from every render path (catalog, palette, sidebar, drawer)."""
+    r = client.get("/static/hub/src/app.jsx")
+    src = r.text
+    # The sync function should flip t.hidden based on server display flag.
+    assert "t.hidden" in src
+    # Each surface filters hidden tiles before rendering.
+    assert "t => !t.hidden" in src or "!t.hidden" in src
+    # A render surface that exists today should have been wrapped.
+    assert "filter" in src  # sanity — we actually apply filters
+
+
+def test_feature_flags_is_displayed_defaults_live_only(monkeypatch):
+    from proofmark_studio import feature_flags as ff
+    monkeypatch.delenv("PROOFMARK_SHOW_ALL_TILES", raising=False)
+    assert ff.is_displayed("merge-pdf", {"status": "live"}) is True
+    assert ff.is_displayed("word-to-pdf", {"status": "beta"}) is False
+    assert ff.is_displayed("project-intake", {"status": "planned"}) is False
+
+
+def test_feature_flags_is_displayed_honors_per_tool_flag(monkeypatch):
+    from proofmark_studio import feature_flags as ff
+    monkeypatch.setenv("TOOL_MERGE_PDF_ENABLED", "false")
+    assert ff.is_displayed("merge-pdf", {"status": "live"}) is False
+
+
+def test_feature_flags_show_all_tiles_reveals_wip(monkeypatch):
+    from proofmark_studio import feature_flags as ff
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
+    assert ff.is_displayed("word-to-pdf", {"status": "beta"}) is True
+    assert ff.is_displayed("project-intake", {"status": "planned"}) is True
+
+
 def test_static_jsx_served():
     """JSX source files reachable at /static/hub/src/*."""
     r = client.get("/static/hub/src/app.jsx")
@@ -267,8 +374,9 @@ def test_tool_router_redirects_live_text_tool():
     assert ":8000" in r.headers["location"] or r.headers["location"].startswith("/text/")
 
 
-def test_tool_router_stub_for_planned():
+def test_tool_router_stub_for_planned(monkeypatch):
     # Workflow tiles stay `planned` until Phase 17 infra (DB+auth) lands.
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
     r = client.get("/tool/project-intake")
     assert r.status_code == 200
     assert "Project Intake" in r.text
@@ -276,8 +384,9 @@ def test_tool_router_stub_for_planned():
     assert "Planned" in r.text
 
 
-def test_tool_router_stub_for_beta():
+def test_tool_router_stub_for_beta(monkeypatch):
     # Office → PDF stays `beta` until a self-hosted LibreOffice runtime lands.
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
     r = client.get("/tool/word-to-pdf")
     assert r.status_code == 200
     assert "Word to PDF" in r.text
@@ -285,8 +394,9 @@ def test_tool_router_stub_for_beta():
     assert "Return to the hub" in r.text
 
 
-def test_tool_router_stub_for_beta_parent_link():
+def test_tool_router_stub_for_beta_parent_link(monkeypatch):
     """Stub page renders the 'Open parent app' button with hub chrome."""
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
     r = client.get("/tool/edit-pdf")
     assert r.status_code == 200
     assert "Edit PDF" in r.text
