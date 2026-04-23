@@ -1,10 +1,19 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "builds": [
     { "src": "web_app.py", "use": "@vercel/python" }
   ],
+  "rewrites": [
+    { "source": "/pdf/:path*",  "destination": "https://proofmark-pdf.vercel.app/:path*" },
+    { "source": "/text/:path*", "destination": "https://text-cleaner.vercel.app/:path*" }
+  ],
   "routes": [
     { "src": "/(.*)", "dest": "/web_app.py" }
-  ]
+  ],
+  "env": {
+    "PROOFMARK_PDF_BASE": "",
+    "PROOFMARK_TEXT_BASE": "",
+    "PROOFMARK_SITE_URL": "https://sabbir.ca/"
+  }
 }
-
