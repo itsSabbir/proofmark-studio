@@ -122,10 +122,10 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "export-cleanup-report":_t("Cleanup Report",    "Export findings and choices.",                     "proof",        "live",    "text-cleaner", "?focus=report"),
 
     # ── AI ────────────────────────────────────────────────────────────
-    "ai-pdf-assistant":   _t("AI Assistant",      "Work with PDFs via a chat assistant.",               "ai",           "beta",    "proofmark-pdf"),
-    "chat-with-pdf":      _t("Chat with PDF",     "Ask questions against a document.",                  "ai",           "beta",    "proofmark-pdf"),
-    "ai-pdf-summarizer":  _t("Summarize PDF",     "Executive summaries from long PDFs.",                "ai",           "beta",    "proofmark-pdf"),
-    "translate-pdf":      _t("Translate PDF",     "Translate PDFs to other languages.",                 "ai",           "planned", "proofmark-pdf"),
+    "ai-pdf-assistant":   _t("AI Assistant",      "Work with PDFs via a chat assistant.",               "ai",           "live",    "proofmark-pdf", "/ai-pdf-assistant"),
+    "chat-with-pdf":      _t("Chat with PDF",     "Ask questions against a document.",                  "ai",           "live",    "proofmark-pdf", "/chat-with-pdf"),
+    "ai-pdf-summarizer":  _t("Summarize PDF",     "Executive summaries from long PDFs.",                "ai",           "live",    "proofmark-pdf", "/ai-pdf-summarizer"),
+    "translate-pdf":      _t("Translate PDF",     "Translate PDFs to other languages.",                 "ai",           "live",    "proofmark-pdf", "/translate-pdf"),
 
     # ── Workflow ──────────────────────────────────────────────────────
     "project-intake":     _t("Project Intake",    "Capture source files and project setup.",            "workflow",     "planned"),

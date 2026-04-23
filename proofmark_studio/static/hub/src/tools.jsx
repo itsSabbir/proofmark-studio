@@ -78,10 +78,10 @@ const TOOLS = [
   { slug:'export-cleanup-report',title:'Cleanup Report',    group:'proof', cat:'proof', status:'live',    icon:'report', desc:'Export findings and choices.' },
 
   // AI
-  { slug:'ai-pdf-assistant',  title:'AI Assistant',   group:'ai', cat:'ai', status:'beta',    icon:'ai',   desc:'Work with PDFs via a chat assistant.' },
-  { slug:'chat-with-pdf',     title:'Chat with PDF',  group:'ai', cat:'ai', status:'beta',    icon:'chat', desc:'Ask questions against a document.' },
-  { slug:'ai-pdf-summarizer', title:'Summarize PDF',  group:'ai', cat:'ai', status:'beta',    icon:'sum',  desc:'Executive summaries from long PDFs.' },
-  { slug:'translate-pdf',     title:'Translate PDF',  group:'ai', cat:'ai', status:'planned', icon:'globe',desc:'Translate PDFs to other languages.' },
+  { slug:'ai-pdf-assistant',  title:'AI Assistant',   group:'ai', cat:'ai', status:'live',    icon:'ai',   desc:'Work with PDFs via a chat assistant.' },
+  { slug:'chat-with-pdf',     title:'Chat with PDF',  group:'ai', cat:'ai', status:'live',    icon:'chat', desc:'Ask questions against a document.' },
+  { slug:'ai-pdf-summarizer', title:'Summarize PDF',  group:'ai', cat:'ai', status:'live',    icon:'sum',  desc:'Executive summaries from long PDFs.' },
+  { slug:'translate-pdf',     title:'Translate PDF',  group:'ai', cat:'ai', status:'live',    icon:'globe',desc:'Translate PDFs to other languages.' },
 
   // WORKFLOW
   { slug:'project-intake',    title:'Project Intake',    group:'workflow', cat:'workflow', status:'planned', icon:'inbox',desc:'Capture source files and project setup.' },
