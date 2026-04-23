@@ -89,13 +89,13 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "pdf-to-html":        _t("PDF to HTML",     "Web-ready HTML output.",                               "convert-from", "live",    "proofmark-pdf", "/pdf-to-html"),
 
     # ── Convert to PDF ────────────────────────────────────────────────
-    "word-to-pdf":        _t("Word to PDF",     "Convert .docx into clean PDF.",                        "convert-to",   "planned", "proofmark-pdf"),
-    "excel-to-pdf":       _t("Excel to PDF",    "Spreadsheets to PDF reports.",                         "convert-to",   "planned", "proofmark-pdf"),
-    "ppt-to-pdf":         _t("PPT to PDF",      "Decks to PDFs.",                                       "convert-to",   "planned", "proofmark-pdf"),
-    "jpg-to-pdf":         _t("JPG to PDF",      "Combine JPGs into a PDF.",                             "convert-to",   "planned", "proofmark-pdf"),
-    "html-to-pdf":        _t("HTML to PDF",     "Render HTML into PDF.",                                "convert-to",   "planned", "proofmark-pdf"),
-    "markdown-to-pdf":    _t("Markdown to PDF", "Markdown to final PDF.",                               "convert-to",   "planned", "proofmark-pdf"),
-    "pdf-ocr":            _t("PDF OCR",         "Make scanned PDFs searchable.",                        "convert-to",   "planned", "proofmark-pdf"),
+    "word-to-pdf":        _t("Word to PDF",     "Convert .docx into clean PDF.",                        "convert-to",   "beta",    "proofmark-pdf"),
+    "excel-to-pdf":       _t("Excel to PDF",    "Spreadsheets to PDF reports.",                         "convert-to",   "beta",    "proofmark-pdf"),
+    "ppt-to-pdf":         _t("PPT to PDF",      "Decks to PDFs.",                                       "convert-to",   "beta",    "proofmark-pdf"),
+    "jpg-to-pdf":         _t("JPG to PDF",      "Combine JPGs into a PDF.",                             "convert-to",   "live",    "proofmark-pdf", "/jpg-to-pdf"),
+    "html-to-pdf":        _t("HTML to PDF",     "Render HTML into PDF.",                                "convert-to",   "live",    "proofmark-pdf", "/html-to-pdf"),
+    "markdown-to-pdf":    _t("Markdown to PDF", "Markdown to final PDF.",                               "convert-to",   "live",    "proofmark-pdf", "/markdown-to-pdf"),
+    "pdf-ocr":            _t("PDF OCR",         "Make scanned PDFs searchable.",                        "convert-to",   "live",    "proofmark-pdf", "/pdf-ocr"),
 
     # ── View & Edit ───────────────────────────────────────────────────
     "edit-pdf":           _t("Edit PDF",        "Edit PDF content and layout inline.",                  "edit",         "planned", "proofmark-pdf"),

@@ -45,13 +45,13 @@ const TOOLS = [
   { slug:'pdf-to-html',     title:'PDF → HTML',     group:'convert-from', cat:'convert',  status:'live',    icon:'html', desc:'Web-ready HTML output.' },
 
   // CONVERT TO PDF
-  { slug:'word-to-pdf',     title:'Word → PDF',     group:'convert-to',   cat:'convert',  status:'planned', icon:'docx', desc:'Convert .docx into clean PDF.', popular:true },
-  { slug:'excel-to-pdf',    title:'Excel → PDF',    group:'convert-to',   cat:'convert',  status:'planned', icon:'xlsx', desc:'Spreadsheets to PDF reports.' },
-  { slug:'ppt-to-pdf',      title:'PPT → PDF',      group:'convert-to',   cat:'convert',  status:'planned', icon:'pptx', desc:'Decks to PDFs.' },
-  { slug:'jpg-to-pdf',      title:'JPG → PDF',      group:'convert-to',   cat:'convert',  status:'planned', icon:'jpg',  desc:'Combine JPGs into a PDF.', popular:true },
-  { slug:'html-to-pdf',     title:'HTML → PDF',     group:'convert-to',   cat:'convert',  status:'planned', icon:'html', desc:'Render HTML into PDF.' },
-  { slug:'markdown-to-pdf', title:'Markdown → PDF', group:'convert-to',   cat:'convert',  status:'planned', icon:'md',   desc:'Markdown to final PDF.' },
-  { slug:'pdf-ocr',         title:'PDF OCR',        group:'convert-to',   cat:'convert',  status:'planned', icon:'ocr',  desc:'Make scanned PDFs searchable.' },
+  { slug:'word-to-pdf',     title:'Word → PDF',     group:'convert-to',   cat:'convert',  status:'beta',    icon:'docx', desc:'Convert .docx into clean PDF.', popular:true },
+  { slug:'excel-to-pdf',    title:'Excel → PDF',    group:'convert-to',   cat:'convert',  status:'beta',    icon:'xlsx', desc:'Spreadsheets to PDF reports.' },
+  { slug:'ppt-to-pdf',      title:'PPT → PDF',      group:'convert-to',   cat:'convert',  status:'beta',    icon:'pptx', desc:'Decks to PDFs.' },
+  { slug:'jpg-to-pdf',      title:'JPG → PDF',      group:'convert-to',   cat:'convert',  status:'live',    icon:'jpg',  desc:'Combine JPGs into a PDF.', popular:true },
+  { slug:'html-to-pdf',     title:'HTML → PDF',     group:'convert-to',   cat:'convert',  status:'live',    icon:'html', desc:'Render HTML into PDF.' },
+  { slug:'markdown-to-pdf', title:'Markdown → PDF', group:'convert-to',   cat:'convert',  status:'live',    icon:'md',   desc:'Markdown to final PDF.' },
+  { slug:'pdf-ocr',         title:'PDF OCR',        group:'convert-to',   cat:'convert',  status:'live',    icon:'ocr',  desc:'Make scanned PDFs searchable.' },
 
   // VIEW & EDIT
   { slug:'edit-pdf',        title:'Edit PDF',        group:'edit',  cat:'edit',  status:'planned', icon:'pencil', desc:'Edit PDF content and layout inline.' },
