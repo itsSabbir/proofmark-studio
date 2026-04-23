@@ -85,6 +85,58 @@ def test_search_support_files_render():
     assert "<urlset" in sitemap.text
 
 
+def test_sitemap_enumerates_live_tools():
+    """Phase 18.6: every live tool has a /tool/{slug} entry in sitemap.xml."""
+    from proofmark_studio import tool_registry as reg
+    r = client.get("/sitemap.xml")
+    assert r.status_code == 200
+    live_slugs = [s for s, t in reg.TOOLS.items() if t["status"] == "live"]
+    assert len(live_slugs) >= 30  # guardrail: sweep keeps this honest
+    for slug in live_slugs:
+        assert f"/tool/{slug}" in r.text, f"sitemap missing /tool/{slug}"
+
+
+def test_sitemap_enumerates_beta_tools():
+    """Beta tools live in the catalog and deserve indexing too."""
+    from proofmark_studio import tool_registry as reg
+    r = client.get("/sitemap.xml")
+    beta_slugs = [s for s, t in reg.TOOLS.items() if t["status"] == "beta"]
+    for slug in beta_slugs:
+        assert f"/tool/{slug}" in r.text, f"sitemap missing beta /tool/{slug}"
+
+
+def test_sitemap_omits_flag_disabled_tools(monkeypatch):
+    """TOOL_<SLUG>_ENABLED=false demotes a tile and must drop it from the sitemap."""
+    monkeypatch.setenv("TOOL_MERGE_PDF_ENABLED", "false")
+    r = client.get("/sitemap.xml")
+    assert r.status_code == 200
+    assert "/tool/merge-pdf" not in r.text
+
+
+def test_sitemap_includes_content_pages():
+    r = client.get("/sitemap.xml")
+    assert "<loc>" in r.text
+    for path in ("/", "/about", "/changelog", "/privacy", "/terms"):
+        assert path in r.text, f"sitemap missing content page {path}"
+
+
+def test_stub_page_has_meta_description():
+    """Phase 18.6: every tool stub page carries a <meta name='description'>."""
+    r = client.get("/tool/project-intake")
+    assert r.status_code == 200
+    assert '<meta name="description"' in r.text
+    # Description should echo the tool's registry desc.
+    assert "project setup" in r.text.lower() or "source files" in r.text.lower()
+
+
+def test_stub_page_has_og_tags():
+    """OpenGraph tags so social shares don't look naked."""
+    r = client.get("/tool/edit-pdf")
+    assert 'property="og:title"' in r.text
+    assert 'property="og:description"' in r.text
+    assert 'property="og:type"' in r.text
+
+
 def test_static_jsx_served():
     """JSX source files reachable at /static/hub/src/*."""
     r = client.get("/static/hub/src/app.jsx")
@@ -111,28 +163,30 @@ def test_tool_router_redirects_live_text_tool():
 
 
 def test_tool_router_stub_for_planned():
-    r = client.get("/tool/sign-pdf")
+    # Workflow tiles stay `planned` until Phase 17 infra (DB+auth) lands.
+    r = client.get("/tool/project-intake")
     assert r.status_code == 200
-    assert "Sign PDF" in r.text
+    assert "Project Intake" in r.text
     assert "Return to the hub" in r.text
-    assert "Open ProofMark PDF" in r.text
     assert "Planned" in r.text
 
 
 def test_tool_router_stub_for_beta():
-    r = client.get("/tool/ai-pdf-assistant")
+    # Office → PDF stays `beta` until a self-hosted LibreOffice runtime lands.
+    r = client.get("/tool/word-to-pdf")
     assert r.status_code == 200
-    assert "AI Assistant" in r.text
+    assert "Word to PDF" in r.text
     assert "Beta" in r.text
     assert "Return to the hub" in r.text
 
 
-def test_tool_router_stub_for_html_to_pdf():
-    """Matches tool-stub.png reference \u2014 HTML to PDF stub with hub chrome + two buttons."""
-    r = client.get("/tool/html-to-pdf")
+def test_tool_router_stub_for_beta_parent_link():
+    """Stub page renders the 'Open parent app' button with hub chrome."""
+    r = client.get("/tool/edit-pdf")
     assert r.status_code == 200
-    assert "HTML to PDF" in r.text
+    assert "Edit PDF" in r.text
     assert "Return to the hub" in r.text
+    assert "Open ProofMark PDF" in r.text
 
 
 def test_tool_router_404_for_unknown():
@@ -148,9 +202,10 @@ def test_api_tools_returns_full_registry():
     tools = payload["tools"]
     assert "merge-pdf" in tools
     assert tools["merge-pdf"]["status"] == "live"
-    assert "sign-pdf" in tools
-    assert tools["sign-pdf"]["status"] == "planned"
-    # Counts sanity
+    # Workflow tiles stay planned until Phase 17 infra (DB+auth) lands.
+    assert "project-intake" in tools
+    assert tools["project-intake"]["status"] == "planned"
+    # Counts sanity — post phase-15/16 promotion sweep baseline
     counts = payload["counts"]
     assert counts["total"] >= 40
-    assert counts["live"] >= 8
+    assert counts["live"] >= 30

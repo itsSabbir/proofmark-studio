@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python -m pytest --tb=line)",
+      "Bash(../../../.venv/Scripts/python -m pytest --tb=line)",
+      "Bash(../../../.venv/Scripts/python -m pytest tests/test_web_app.py -k \"sitemap or stub_page_has or og\" --tb=short)",
+      "Bash(../../../.venv/Scripts/python -c \"import markdown; print\\(markdown.__version__\\)\")",
+      "Bash(../../../.venv/Scripts/python -m pytest tests/test_web_app.py --tb=short)",
+      "Bash(../../../.venv/Scripts/python -m pytest tests/ --tb=short)",
+      "Bash(../../../.venv/Scripts/python -m pytest tests/ --collect-only -q)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat\\(seo\\): sitemap covers every live+beta tool; stub pages gain meta+og tags *)"
+    ]
+  }
+}

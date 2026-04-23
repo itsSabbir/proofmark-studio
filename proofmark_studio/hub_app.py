@@ -7,6 +7,7 @@ and forwards clicks via redirects. See docs/architecture.md.
 from __future__ import annotations
 
 import argparse
+import html
 import os
 import socket
 import subprocess
@@ -209,12 +210,23 @@ def _render_stub(slug: str, entry: Dict[str, object]) -> str:
             f"and navigation model. The working implementation can land here without reshaping the hub."
         )
 
+    title_full = f"{entry['title']} \u2014 {APP_NAME}"
+    meta_desc = html.escape(desc, quote=True)
+    meta_title = html.escape(title_full, quote=True)
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{entry['title']} \u2014 {APP_NAME}</title>
+  <title>{title_full}</title>
+  <meta name="description" content="{meta_desc}">
+  <meta property="og:title" content="{meta_title}">
+  <meta property="og:description" content="{meta_desc}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{APP_NAME}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{meta_title}">
+  <meta name="twitter:description" content="{meta_desc}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -326,6 +338,29 @@ def terms() -> HTMLResponse:
     return _minimal_page("Terms of Use", "<p>ProofMark Studio is provided as-is for document work. You are responsible for the content you process. No warranty, no guarantees \u2014 you own the results.</p>")
 
 
+@app.get("/about", response_class=HTMLResponse)
+def about_page() -> HTMLResponse:
+    # Phase 18.7 replaces this with a markdown-driven renderer.
+    body = (
+        "<p>ProofMark Studio is a working hub for proofing, converting, signing, and "
+        "transforming PDFs. It composes independent sibling apps (ProofMark PDF, Text "
+        "Inspection) behind a single catalog UI.</p>"
+        "<p>The studio is solo-built and ships in small, verifiable steps.</p>"
+        "<p><a href='/changelog'>See the changelog</a> for what shipped recently.</p>"
+    )
+    return _minimal_page("About ProofMark Studio", body)
+
+
+@app.get("/changelog", response_class=HTMLResponse)
+def changelog_page() -> HTMLResponse:
+    # Phase 18.7 replaces this with a markdown-driven renderer.
+    body = (
+        "<p>Release notes and tool-promotion history. "
+        "See the <a href='/#tools'>tool catalog</a> for current status.</p>"
+    )
+    return _minimal_page("Changelog", body)
+
+
 @app.get("/local-projects", response_class=HTMLResponse)
 def local_projects_page() -> HTMLResponse:
     body = (
@@ -346,11 +381,26 @@ def robots(request: Request) -> Response:
     return Response(content=body, media_type="text/plain")
 
 
+CONTENT_PAGES = ("/", "/about", "/changelog", "/privacy", "/terms", "/local-projects")
+
+
 @app.get("/sitemap.xml", response_class=Response)
 def sitemap(request: Request) -> Response:
+    """Enumerate content pages + every live/beta tool the hub advertises.
+
+    Flag-disabled tools (TOOL_<SLUG>_ENABLED=false) drop out so crawlers
+    don't index pages that resolve to a 'paused' stub.
+    """
     origin = str(request.base_url).rstrip("/")
-    urls = ["/", "/privacy", "/terms", "/local-projects"]
-    tags = "".join(f"<url><loc>{origin}{u}</loc></url>" for u in urls)
+    tool_paths = [
+        f"/tool/{slug}"
+        for slug, entry in _registry.TOOLS.items()
+        if entry["status"] in {"live", "beta"} and _flags.is_enabled(slug)
+    ]
+    tags = "".join(
+        f"<url><loc>{origin}{p}</loc></url>"
+        for p in (*CONTENT_PAGES, *sorted(tool_paths))
+    )
     body = (
         "<?xml version='1.0' encoding='UTF-8'?>"
         "<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>" + tags + "</urlset>"
