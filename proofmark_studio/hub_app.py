@@ -29,6 +29,7 @@ except ImportError:
     pass
 
 from proofmark_studio import feature_flags as _flags
+from proofmark_studio import markdown_lite as _md
 from proofmark_studio import tool_registry as _registry
 
 # ─── Constants ────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ KNOWN_PORTS = (8020, 8021, 8022, 8030, 8040)
 PACKAGE_ROOT = Path(__file__).resolve().parent
 STATIC_DIR = PACKAGE_ROOT / "static"
 HUB_INDEX = STATIC_DIR / "hub" / "index.html"
+DOCS_DIR = PACKAGE_ROOT.parent / "docs"
 
 # ─── FastAPI app ──────────────────────────────────────────────────────────
 app = FastAPI(title=APP_NAME, description=APP_DESCRIPTION)
@@ -340,25 +342,94 @@ def terms() -> HTMLResponse:
 
 @app.get("/about", response_class=HTMLResponse)
 def about_page() -> HTMLResponse:
-    # Phase 18.7 replaces this with a markdown-driven renderer.
-    body = (
-        "<p>ProofMark Studio is a working hub for proofing, converting, signing, and "
-        "transforming PDFs. It composes independent sibling apps (ProofMark PDF, Text "
-        "Inspection) behind a single catalog UI.</p>"
-        "<p>The studio is solo-built and ships in small, verifiable steps.</p>"
-        "<p><a href='/changelog'>See the changelog</a> for what shipped recently.</p>"
+    return _render_markdown_page(
+        slug="about",
+        title="About",
+        description="About ProofMark Studio — a working hub for proofing, converting, signing, and transforming PDFs.",
     )
-    return _minimal_page("About ProofMark Studio", body)
 
 
 @app.get("/changelog", response_class=HTMLResponse)
 def changelog_page() -> HTMLResponse:
-    # Phase 18.7 replaces this with a markdown-driven renderer.
-    body = (
-        "<p>Release notes and tool-promotion history. "
-        "See the <a href='/#tools'>tool catalog</a> for current status.</p>"
+    return _render_markdown_page(
+        slug="changelog",
+        title="Changelog",
+        description="Release notes and tool-promotion history for ProofMark Studio.",
     )
-    return _minimal_page("Changelog", body)
+
+
+def _render_markdown_page(slug: str, title: str, description: str) -> HTMLResponse:
+    source = (DOCS_DIR / f"{slug}.md").read_text(encoding="utf-8")
+    body_html = _md.render(source)
+    title_full = f"{title} \u2014 {APP_NAME}"
+    meta_desc = html.escape(description, quote=True)
+    meta_title = html.escape(title_full, quote=True)
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{title_full}</title>
+  <meta name="description" content="{meta_desc}">
+  <meta property="og:title" content="{meta_title}">
+  <meta property="og:description" content="{meta_desc}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{APP_NAME}">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --bg: #0a0a0b; --bg-elev: #111113; --border: #1f1f24;
+      --text: #f1f1f3; --text-muted: #8a8a94; --text-dim: #5e5e68;
+      --accent: #7cb0ff; --accent-ink: #0a0a0b;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }}
+    a {{ color: var(--accent); text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+    .topbar {{ display: flex; align-items: center; gap: 22px; padding: 16px 28px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter: blur(14px); z-index: 10; }}
+    .brand {{ display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }}
+    .brand .dot {{ width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; }}
+    .brand .tag {{ color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }}
+    .nav {{ margin-left: auto; display: flex; gap: 18px; font-size: 13px; color: var(--text-muted); }}
+    .nav a {{ color: inherit; }}
+    .nav a:hover {{ color: var(--text); text-decoration: none; }}
+    main {{ max-width: 760px; margin: 0 auto; padding: 48px 32px 80px; line-height: 1.65; }}
+    main h1 {{ font-family: var(--font-serif); font-weight: 400; font-size: clamp(40px, 5vw, 60px); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 24px; }}
+    main h2 {{ font-family: var(--font-serif); font-weight: 400; font-size: 26px; margin: 40px 0 12px; letter-spacing: -0.01em; }}
+    main h3 {{ font-size: 16px; margin: 28px 0 8px; font-weight: 600; }}
+    main p {{ color: var(--text-muted); font-size: 15px; margin: 0 0 16px; }}
+    main ul {{ color: var(--text-muted); font-size: 15px; padding-left: 20px; margin: 0 0 16px; }}
+    main li {{ margin-bottom: 6px; }}
+    main code {{ font-family: var(--font-mono); background: var(--bg-elev); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--text); }}
+    footer {{ max-width: 760px; margin: 0 auto; padding: 24px 32px 40px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12.5px; display: flex; gap: 18px; flex-wrap: wrap; }}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand"><span class="dot">\u25C7</span><span>ProofMark<br><span class="tag">Studio \u00b7 Working hub</span></span></a>
+    <nav class="nav">
+      <a href="/">Studio</a>
+      <a href="/#tools">Tools</a>
+      <a href="/about">About</a>
+      <a href="/changelog">Changelog</a>
+    </nav>
+  </header>
+  <main>{body_html}</main>
+  <footer>
+    <span>ProofMark Studio</span>
+    <span style="margin-left:auto">/{slug}</span>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </footer>
+</body>
+</html>"""
+    return HTMLResponse(content=page)
 
 
 @app.get("/local-projects", response_class=HTMLResponse)

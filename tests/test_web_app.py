@@ -137,6 +137,58 @@ def test_stub_page_has_og_tags():
     assert 'property="og:type"' in r.text
 
 
+# ─── Phase 18.7: /about + /changelog ───────────────────────────────────
+
+def test_about_page_renders_from_markdown():
+    r = client.get("/about")
+    assert r.status_code == 200
+    # Content from docs/about.md should flow through the markdown renderer.
+    assert "<h1>" in r.text
+    assert "ProofMark Studio" in r.text
+    assert '<meta name="description"' in r.text
+
+
+def test_changelog_page_renders_from_markdown():
+    r = client.get("/changelog")
+    assert r.status_code == 200
+    assert "<h1>" in r.text
+    # The changelog tracks promotion history — assert a concrete anchor.
+    assert "Phase" in r.text or "release" in r.text.lower()
+    assert '<meta name="description"' in r.text
+
+
+def test_markdown_lite_renders_headings_paragraphs_lists():
+    from proofmark_studio.markdown_lite import render
+    md = "# Title\n\nFirst paragraph.\n\n- one\n- two\n\nSecond paragraph."
+    html_out = render(md)
+    assert "<h1>Title</h1>" in html_out
+    assert "<p>First paragraph.</p>" in html_out
+    assert "<ul>" in html_out and "<li>one</li>" in html_out and "<li>two</li>" in html_out
+    assert "<p>Second paragraph.</p>" in html_out
+
+
+def test_markdown_lite_escapes_html_in_source():
+    """Authored content only, but still escape to guard against accidental raw HTML."""
+    from proofmark_studio.markdown_lite import render
+    html_out = render("# <script>alert(1)</script>")
+    assert "<script>" not in html_out
+    assert "&lt;script&gt;" in html_out
+
+
+def test_markdown_lite_renders_inline_formatting():
+    from proofmark_studio.markdown_lite import render
+    html_out = render("Hello **world** and _italics_ and `code`.")
+    assert "<strong>world</strong>" in html_out
+    assert "<em>italics</em>" in html_out
+    assert "<code>code</code>" in html_out
+
+
+def test_markdown_lite_renders_links():
+    from proofmark_studio.markdown_lite import render
+    html_out = render("See [hub](/).")
+    assert '<a href="/">hub</a>' in html_out
+
+
 def test_static_jsx_served():
     """JSX source files reachable at /static/hub/src/*."""
     r = client.get("/static/hub/src/app.jsx")
