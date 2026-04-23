@@ -209,6 +209,39 @@ def test_shortcuts_modal_lists_known_bindings():
         assert key in src, f"shortcuts cheat-sheet missing entry for {key!r}"
 
 
+# ─── Phase 18.4: pretty error pages ────────────────────────────────────
+
+def test_unknown_tool_returns_pretty_404_with_hub_chrome():
+    r = client.get("/tool/this-is-not-a-real-tool")
+    assert r.status_code == 404
+    assert "text/html" in r.headers["content-type"]
+    # Hub chrome markers.
+    assert "ProofMark" in r.text
+    assert "Return to the hub" in r.text
+    # A humane 404 headline, not FastAPI's default JSON.
+    assert "404" in r.text
+    assert "Not found" in r.text or "not found" in r.text
+
+
+def test_unknown_top_level_path_returns_pretty_404():
+    r = client.get("/this-path-does-not-exist")
+    assert r.status_code == 404
+    assert "text/html" in r.headers["content-type"]
+    assert "ProofMark" in r.text
+
+
+def test_api_404_stays_json():
+    """API routes keep the JSON error contract; only HTML views get chrome."""
+    r = client.get("/api/not-a-real-endpoint")
+    assert r.status_code == 404
+    assert "application/json" in r.headers["content-type"]
+
+
+def test_error_page_has_meta_description():
+    r = client.get("/this-path-does-not-exist")
+    assert '<meta name="description"' in r.text
+
+
 def test_static_jsx_served():
     """JSX source files reachable at /static/hub/src/*."""
     r = client.get("/static/hub/src/app.jsx")

@@ -18,8 +18,10 @@ from typing import Dict, Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 try:  # pragma: no cover - env loading is best-effort
     from dotenv import load_dotenv
@@ -338,6 +340,88 @@ def privacy() -> HTMLResponse:
 @app.get("/terms", response_class=HTMLResponse)
 def terms() -> HTMLResponse:
     return _minimal_page("Terms of Use", "<p>ProofMark Studio is provided as-is for document work. You are responsible for the content you process. No warranty, no guarantees \u2014 you own the results.</p>")
+
+
+@app.exception_handler(StarletteHTTPException)
+async def pretty_http_exception(request: Request, exc: StarletteHTTPException):
+    """HTML routes get chrome-styled error pages; API/static stay JSON."""
+    path = request.url.path
+    if path.startswith("/api") or path.startswith("/static"):
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    return HTMLResponse(
+        content=_render_error_page(exc.status_code, exc.detail or ""),
+        status_code=exc.status_code,
+    )
+
+
+def _render_error_page(status_code: int, detail: str) -> str:
+    headline_map = {
+        404: ("404", "Page not found",
+              "That tool slug or path doesn't live in the hub. Jump back to the catalog to find what you need."),
+        500: ("500", "Something went sideways",
+              "An unexpected error hit the hub. Reload, or head back to the catalog while we look into it."),
+    }
+    code, headline, body_text = headline_map.get(
+        status_code,
+        (str(status_code), "Something went wrong", detail or "The hub couldn't complete that request."),
+    )
+    meta_desc = html.escape(f"{headline} \u2014 {APP_NAME}", quote=True)
+    page_title = f"{code} \u00b7 {headline} \u2014 {APP_NAME}"
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{page_title}</title>
+  <meta name="description" content="{meta_desc}">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --bg: #0a0a0b; --bg-elev: #111113; --border: #1f1f24; --border-strong: #2a2a31;
+      --text: #f1f1f3; --text-muted: #8a8a94; --text-dim: #5e5e68;
+      --accent: #7cb0ff; --accent-ink: #0a0a0b;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }}
+    a {{ color: inherit; text-decoration: none; }}
+    .topbar {{ display: flex; align-items: center; gap: 22px; padding: 16px 28px; border-bottom: 1px solid var(--border); }}
+    .brand {{ display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }}
+    .brand .dot {{ width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; }}
+    .brand .tag {{ color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }}
+    main {{ flex: 1; display: grid; place-items: center; padding: 40px 24px; }}
+    .card {{ max-width: 520px; text-align: center; }}
+    .code {{ font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); letter-spacing: .2em; text-transform: uppercase; margin: 0 0 10px; }}
+    h1 {{ font-family: var(--font-serif); font-weight: 400; font-size: clamp(44px, 7vw, 72px); line-height: 1; letter-spacing: -0.02em; margin: 0 0 16px; }}
+    p {{ font-size: 15px; line-height: 1.6; color: var(--text-muted); margin: 0 0 28px; }}
+    .row {{ display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }}
+    .btn {{ display: inline-flex; align-items: center; padding: 11px 16px; border-radius: 11px; font-size: 13px; font-weight: 600; border: 1px solid transparent; }}
+    .btn-primary {{ background: var(--accent); color: var(--accent-ink); }}
+    .btn-ghost {{ background: var(--bg-elev); color: var(--text); border-color: var(--border-strong); }}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand"><span class="dot">\u25C7</span><span>ProofMark<br><span class="tag">Studio \u00b7 Working hub</span></span></a>
+  </header>
+  <main>
+    <div class="card">
+      <p class="code">{code}</p>
+      <h1>{headline}</h1>
+      <p>{body_text}</p>
+      <div class="row">
+        <a class="btn btn-primary" href="/">Return to the hub</a>
+        <a class="btn btn-ghost" href="/#tools">Browse tools</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>"""
 
 
 @app.get("/about", response_class=HTMLResponse)
