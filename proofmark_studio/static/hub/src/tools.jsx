@@ -41,8 +41,8 @@ const TOOLS = [
   { slug:'pdf-to-jpg',      title:'PDF → JPG',      group:'convert-from', cat:'convert',  status:'live',    icon:'jpg',  desc:'Export pages as JPG images.', popular:true },
   { slug:'pdf-to-png',      title:'PDF → PNG',      group:'convert-from', cat:'convert',  status:'live',    icon:'png',  desc:'Export pages as PNG images.' },
   { slug:'pdf-to-text',     title:'PDF → Text',     group:'convert-from', cat:'convert',  status:'live',    icon:'txt',  desc:'Extract clean text.' },
-  { slug:'pdf-to-markdown', title:'PDF → Markdown', group:'convert-from', cat:'convert',  status:'planned', icon:'md',   desc:'Markdown-friendly content.' },
-  { slug:'pdf-to-html',     title:'PDF → HTML',     group:'convert-from', cat:'convert',  status:'planned', icon:'html', desc:'Web-ready HTML output.' },
+  { slug:'pdf-to-markdown', title:'PDF → Markdown', group:'convert-from', cat:'convert',  status:'live',    icon:'md',   desc:'Markdown-friendly content.' },
+  { slug:'pdf-to-html',     title:'PDF → HTML',     group:'convert-from', cat:'convert',  status:'live',    icon:'html', desc:'Web-ready HTML output.' },
 
   // CONVERT TO PDF
   { slug:'word-to-pdf',     title:'Word → PDF',     group:'convert-to',   cat:'convert',  status:'planned', icon:'docx', desc:'Convert .docx into clean PDF.', popular:true },
