@@ -32,7 +32,7 @@ const TOOLS = [
   { slug:'organize-pdf',      title:'Organize PDF',    group:'organize',     cat:'organize', status:'beta',    icon:'grid',     desc:'Resequence and reorganize page structure visually.' },
   { slug:'compress-pdf',      title:'Compress PDF',    group:'organize',     cat:'organize', status:'live',    icon:'compress', desc:'Shrink file size without losing structure.', popular:true },
   { slug:'rotate-pdf',        title:'Rotate PDF',      group:'organize',     cat:'organize', status:'live',    icon:'rotate',   desc:'Rotate pages and normalize orientation.' },
-  { slug:'delete-pdf-pages',  title:'Delete Pages',    group:'organize',     cat:'organize', status:'planned', icon:'minus',    desc:'Remove unwanted pages before delivery.' },
+  { slug:'delete-pdf-pages',  title:'Delete Pages',    group:'organize',     cat:'organize', status:'live',    icon:'minus',    desc:'Remove unwanted pages before delivery.' },
 
   // CONVERT FROM PDF
   { slug:'pdf-to-word',     title:'PDF → Word',     group:'convert-from', cat:'convert',  status:'planned', icon:'docx', desc:'Editable .docx output.', popular:true },
