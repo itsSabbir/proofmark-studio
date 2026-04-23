@@ -75,7 +75,7 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "extract-pdf-pages":  _t("Extract Pages",   "Pull selected pages into a new file.",                 "organize",     "live",    "proofmark-pdf"),
     "organize-pdf":       _t("Organize PDF",    "Resequence and reorganize page structure visually.",   "organize",     "beta",    "proofmark-pdf"),
     "compress-pdf":       _t("Compress PDF",    "Shrink file size without losing structure.",           "organize",     "live",    "proofmark-pdf", "/compress-pdf"),
-    "rotate-pdf":         _t("Rotate PDF",      "Rotate pages and normalize orientation.",              "organize",     "planned", "proofmark-pdf"),
+    "rotate-pdf":         _t("Rotate PDF",      "Rotate pages and normalize orientation.",              "organize",     "live",    "proofmark-pdf", "/rotate-pdf"),
     "delete-pdf-pages":   _t("Delete Pages",    "Remove unwanted pages before delivery.",               "organize",     "planned", "proofmark-pdf"),
 
     # ── Convert from PDF ──────────────────────────────────────────────
