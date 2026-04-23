@@ -6,3 +6,5 @@ _archive/
 *.egg-info/
 *.py[cod]
 .env
+
+.vercel

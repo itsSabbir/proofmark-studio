@@ -6,10 +6,8 @@
   ],
   "rewrites": [
     { "source": "/pdf/:path*",  "destination": "https://proofmark-pdf.vercel.app/:path*" },
-    { "source": "/text/:path*", "destination": "https://text-cleaner.vercel.app/:path*" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/web_app.py" }
+    { "source": "/text/:path*", "destination": "https://proofmark.sabbir.ca/:path*" },
+    { "source": "/(.*)",        "destination": "/web_app.py" }
   ],
   "env": {
     "PROOFMARK_PDF_BASE": "",

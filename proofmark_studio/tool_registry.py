@@ -53,12 +53,15 @@ def _t(title: str, desc: str, group: str, status: str,
        parent: Optional[str] = None, path: str = "") -> Dict[str, object]:
     # URL is only set for LIVE tools \u2014 beta/planned go through the stub page.
     # The stub's "Open parent app" button uses PARENT_URLS, not this field.
+    # NOTE: keep paths WITHOUT trailing slashes (Vercel rewrite `/pdf/:path*` won't
+    # match `/pdf/`). Use "" for sibling home, "?foo=bar" for querystrings, or
+    # "/specific-route" for specific routes.
     url: Optional[str] = None
     if status == "live":
         if parent == "proofmark-pdf":
-            url = _pdf(path) if path else _pdf("/")
+            url = _pdf(path)
         elif parent == "text-cleaner":
-            url = _text(path) if path else _text("/")
+            url = _text(path)
     return {
         "title": title, "desc": desc, "group": group,
         "status": status, "parent": parent, "url": url,
@@ -69,7 +72,7 @@ TOOLS: Dict[str, Dict[str, object]] = {
     # ── Organize ──────────────────────────────────────────────────────
     "merge-pdf":          _t("Merge PDF",       "Combine multiple PDFs into a single document.",        "organize",     "live",    "proofmark-pdf", "/merge-pdf"),
     "split-pdf":          _t("Split PDF",       "Split by range, fixed chunks, or every N pages.",      "organize",     "live",    "proofmark-pdf", "/split-pdf"),
-    "extract-pdf-pages":  _t("Extract Pages",   "Pull selected pages into a new file.",                 "organize",     "live",    "proofmark-pdf", "/"),
+    "extract-pdf-pages":  _t("Extract Pages",   "Pull selected pages into a new file.",                 "organize",     "live",    "proofmark-pdf"),
     "organize-pdf":       _t("Organize PDF",    "Resequence and reorganize page structure visually.",   "organize",     "beta",    "proofmark-pdf"),
     "compress-pdf":       _t("Compress PDF",    "Shrink file size without losing structure.",           "organize",     "planned", "proofmark-pdf"),
     "rotate-pdf":         _t("Rotate PDF",      "Rotate pages and normalize orientation.",              "organize",     "planned", "proofmark-pdf"),
@@ -112,11 +115,11 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "flatten-pdf":        _t("Flatten PDF",       "Flatten annotations and interactive layers.",        "sign",         "planned", "proofmark-pdf"),
 
     # ── Proofing (text-cleaner) ───────────────────────────────────────
-    "text-inspection":      _t("Text Inspection",   "Hidden chars, normalize whitespace, typography.",  "proof",        "live",    "text-cleaner", "/"),
-    "inspect-hidden":       _t("Hidden Characters", "Zero-width, bidi, suspicious glyphs.",             "proof",        "live",    "text-cleaner", "/?focus=hidden"),
-    "normalize-whitespace": _t("Normalize Space",   "Review and normalize whitespace.",                 "proof",        "live",    "text-cleaner", "/?focus=whitespace"),
-    "review-typography":    _t("Typography Review", "Check typographic replacements.",                  "proof",        "live",    "text-cleaner", "/?focus=typography"),
-    "export-cleanup-report":_t("Cleanup Report",    "Export findings and choices.",                     "proof",        "live",    "text-cleaner", "/?focus=report"),
+    "text-inspection":      _t("Text Inspection",   "Hidden chars, normalize whitespace, typography.",  "proof",        "live",    "text-cleaner"),
+    "inspect-hidden":       _t("Hidden Characters", "Zero-width, bidi, suspicious glyphs.",             "proof",        "live",    "text-cleaner", "?focus=hidden"),
+    "normalize-whitespace": _t("Normalize Space",   "Review and normalize whitespace.",                 "proof",        "live",    "text-cleaner", "?focus=whitespace"),
+    "review-typography":    _t("Typography Review", "Check typographic replacements.",                  "proof",        "live",    "text-cleaner", "?focus=typography"),
+    "export-cleanup-report":_t("Cleanup Report",    "Export findings and choices.",                     "proof",        "live",    "text-cleaner", "?focus=report"),
 
     # ── AI ────────────────────────────────────────────────────────────
     "ai-pdf-assistant":   _t("AI Assistant",      "Work with PDFs via a chat assistant.",               "ai",           "beta",    "proofmark-pdf"),
