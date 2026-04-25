@@ -4,6 +4,7 @@ Release notes and tool-promotion history. Dates follow the commit order on `main
 
 ## Phase 18 — polish + SEO (in progress)
 
+- Dynamic **OpenGraph cards** at `/og/<slug>.png` — 1200×630 PNGs rendered with the brand fonts (Instrument Serif + Geist), group color tints the accent stripe and status pill, in-process LRU cache plus HTTP `Cache-Control` for crawler-friendly serving. Tool stub pages and the markdown content pages now reference their own OG image so social shares look like a real product.
 - Catalog is now **live-only by default**. Beta and planned tiles stay in the registry for the roadmap but are hidden from every user-facing surface: catalog, sitemap, command palette, pinned/workflow views, and the `/tool/{slug}` router. Roadmap mode (`PROOFMARK_SHOW_ALL_TILES=true`) restores the full catalog for local dev and plan review.
 - Sitemap enumerates every displayed tool, respecting feature flags and the display mode.
 - Tool stub pages carry `meta description`, OpenGraph, and Twitter card tags so social shares aren't naked.

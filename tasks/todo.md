@@ -467,8 +467,11 @@ If any check fails, **stop and fix before proceeding.** Don't build new tools on
 - [x] Tests
 
 ### 18.5 OG images (1 day)
-- [ ] Dynamic `/og/<slug>.png` renders tool-specific social card
-- [ ] Test in Twitter/LinkedIn validators
+- [x] Dynamic `/og/<slug>.png` renders tool-specific social card (Pillow, brand fonts bundled)
+- [x] Brand-level fallback at `/og/proofmark-studio.png` for `/`, `/about`, `/changelog`
+- [x] LRU cache + HTTP `Cache-Control: public, max-age=3600, s-maxage=86400`
+- [x] Stub pages + markdown pages emit `og:image` meta tag
+- [ ] Test in Twitter/LinkedIn validators (manual, post-deploy)
 
 ### 18.6 Sitemap + SEO (1 day)
 - [x] Auto-regenerate sitemap from live tools

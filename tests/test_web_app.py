@@ -349,6 +349,68 @@ def test_feature_flags_show_all_tiles_reveals_wip(monkeypatch):
     assert ff.is_displayed("project-intake", {"status": "planned"}) is True
 
 
+# ─── Phase 18.5: dynamic OG cards ──────────────────────────────────────
+
+def test_og_card_returns_png_for_live_tool():
+    r = client.get("/og/merge-pdf.png")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/png"
+    # PNG magic header.
+    assert r.content[:8] == b"\x89PNG\r\n\x1a\n"
+    # 1200x630 cards weigh ~20-50KB. Sanity floor — guards against blank renders.
+    assert len(r.content) > 4_000
+
+
+def test_og_card_renders_correct_dimensions():
+    """Pillow round-trip — verify the rendered PNG is exactly 1200x630."""
+    from io import BytesIO
+    from PIL import Image
+    r = client.get("/og/merge-pdf.png")
+    img = Image.open(BytesIO(r.content))
+    assert img.size == (1200, 630)
+
+
+def test_og_card_carries_cache_headers():
+    r = client.get("/og/merge-pdf.png")
+    cc = r.headers.get("cache-control", "")
+    assert "max-age" in cc
+    assert "public" in cc
+
+
+def test_og_card_falls_back_for_unknown_slug():
+    """Unknown slug → brand card so /og/proofmark-studio.png works for content pages."""
+    r = client.get("/og/proofmark-studio.png")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/png"
+    assert r.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_og_card_renders_for_beta_tool_too(monkeypatch):
+    """OG cards are content, not a display surface — even hidden tiles get one."""
+    monkeypatch.delenv("PROOFMARK_SHOW_ALL_TILES", raising=False)
+    r = client.get("/og/word-to-pdf.png")
+    assert r.status_code == 200
+    assert r.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_stub_page_links_og_image(monkeypatch):
+    monkeypatch.setenv("PROOFMARK_SHOW_ALL_TILES", "true")
+    r = client.get("/tool/word-to-pdf")
+    assert 'property="og:image" content="/og/word-to-pdf.png"' in r.text
+    assert 'name="twitter:card" content="summary_large_image"' in r.text
+    assert 'property="og:image:width" content="1200"' in r.text
+
+
+def test_about_page_links_og_image():
+    r = client.get("/about")
+    assert 'property="og:image" content="/og/about.png"' in r.text
+
+
+def test_changelog_page_links_og_image():
+    r = client.get("/changelog")
+    assert 'property="og:image" content="/og/changelog.png"' in r.text
+
+
 def test_static_jsx_served():
     """JSX source files reachable at /static/hub/src/*."""
     r = client.get("/static/hub/src/app.jsx")

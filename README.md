@@ -54,6 +54,14 @@ Document workflows fragment across a dozen single-purpose websites — merge her
 
 ![Pretty 404](docs/screenshots/hub-404.png)
 
+### Dynamic OpenGraph cards
+
+Every tool gets its own social-share card at `/og/<slug>.png` (1200×630). Brand-level fallback at `/og/proofmark-studio.png` covers `/`, `/about`, and `/changelog`. Group color tints the accent stripe and status pill.
+
+| Brand card | Tool card · Organize tone | Tool card · Sign tone |
+|---|---|---|
+| ![](docs/screenshots/og-proofmark-studio.png) | ![](docs/screenshots/og-merge-pdf.png) | ![](docs/screenshots/og-sign-pdf.png) |
+
 ### Live-only vs roadmap mode
 
 The catalog defaults to **live-only** — only tools that work end-to-end are visible. Flipping `PROOFMARK_SHOW_ALL_TILES=true` restores the full 49-tile catalog for plan review.
