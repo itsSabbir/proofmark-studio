@@ -92,26 +92,6 @@ const TOOLS = [
   { slug:'publishing-hub',    title:'Publishing Hub',    group:'workflow', cat:'workflow', status:'planned', icon:'feed', desc:'Publishing-ready exports and distribution.' },
 ];
 
-const RECENT_ACTIVITY = [
-  { id:1, kind:'merge-pdf',          label:'Merged 4 PDFs',              meta:'Q3-Report.pdf · 12.4 MB',   when:'just now',  by:'you' },
-  { id:2, kind:'text-inspection',    label:'Cleaned 2,841 characters',   meta:'brief-v7.md · 7 issues',    when:'18 min ago',by:'you' },
-  { id:3, kind:'split-pdf',          label:'Split into 6 files',         meta:'Contracts-2026.pdf',        when:'1 h ago',   by:'M. Chen' },
-  { id:4, kind:'extract-pdf-pages',  label:'Extracted pages 3–11',       meta:'Onboarding.pdf',            when:'2 h ago',   by:'you' },
-  { id:5, kind:'pdf-annotator',      label:'12 comments added',          meta:'legal-redline-v2.pdf',      when:'yesterday', by:'K. Park' },
-  { id:6, kind:'ai-pdf-summarizer',  label:'3-page executive summary',   meta:'investor-deck.pdf',         when:'yesterday', by:'you' },
-];
-
-const SPOKES = [
-  { id:'text',   title:'Text Inspection', status:'live',    desc:'Surface hidden characters, normalize text.' },
-  { id:'pdf',    title:'ProofMark PDF',   status:'live',    desc:'Merge, split, reshape documents.' },
-  { id:'tools',  title:'Document Suite',  status:'planned', desc:'Editing, conversion, signing, production.' },
-  { id:'review', title:'Review & QA',     status:'planned', desc:'Checks, standards, review passes.' },
-  { id:'site',   title:'ProofMark Site',  status:'live',    desc:'Public brand entry point.' },
-  { id:'ai',     title:'AI & Automation', status:'planned', desc:'Assistants, workflow support.' },
-];
-
 window.PM_CATEGORIES = CATEGORIES;
 window.PM_GROUPS = GROUPS;
 window.PM_TOOLS = TOOLS;
-window.PM_RECENT = RECENT_ACTIVITY;
-window.PM_SPOKES = SPOKES;

@@ -126,14 +126,11 @@ def api_health() -> JSONResponse:
 
 @app.get("/api/studio-map")
 def api_studio_map() -> JSONResponse:
-    """Backward-compatible platform-map payload consumed by the React hub sidebar."""
+    """Live platform components only — no speculative 'planned' lanes."""
     spokes = [
         {"id": "text", "title": "Text Inspection", "tone": "live", "url": "/go/text-inspection"},
         {"id": "pdf", "title": "ProofMark PDF", "tone": "live", "url": "/go/proofmark-pdf"},
-        {"id": "tools", "title": "Document Suite", "tone": "planned"},
-        {"id": "review", "title": "Review & QA", "tone": "planned"},
         {"id": "site", "title": "ProofMark Site", "tone": "live", "url": "/go/proofmark-site"},
-        {"id": "ai", "title": "AI & Automation", "tone": "planned"},
     ]
     return JSONResponse({"service": "proofmark-studio", "spokes": spokes})
 

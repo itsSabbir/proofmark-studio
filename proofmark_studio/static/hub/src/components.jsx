@@ -130,10 +130,7 @@ const Sidebar = ({ active, onSelect, onOpenPalette, density }) => {
   const items = [
     { id:'home',     label:'Home',      g:'home',   kbd:'H' },
     { id:'tools',    label:'All tools', g:'grid',   kbd:'G' },
-    { id:'recent',   label:'Recent',    g:'clock',  kbd:'R' },
     { id:'pinned',   label:'Pinned',    g:'pin',    kbd:'P' },
-    { id:'workflow', label:'Workflow',  g:'inbox',  kbd:'W' },
-    { id:'map',      label:'Platform',  g:'layers', kbd:'M' },
   ];
   const bottom = [
     { id:'settings', label:'Settings',  g:'settings' },

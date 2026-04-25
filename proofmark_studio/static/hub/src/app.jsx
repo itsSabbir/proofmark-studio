@@ -19,10 +19,7 @@ const SHORTCUTS = [
   { combo: ['?'],                label: 'Open this cheat-sheet' },
   { combo: ['H'],                label: 'Go to Home' },
   { combo: ['G'],                label: 'Go to All tools' },
-  { combo: ['R'],                label: 'Go to Recent' },
   { combo: ['P'],                label: 'Go to Pinned' },
-  { combo: ['W'],                label: 'Go to Workflow' },
-  { combo: ['M'],                label: 'Go to Platform map' },
   { combo: ['Esc'],              label: 'Close dialogs / drawers' },
 ];
 
@@ -340,12 +337,8 @@ const GroupHeader = ({ group, count, onViewAll }) => (
 
 /* ---------- Hero: visual-first ---------- */
 const HeroPanel = ({ onOpenPalette }) => {
-  // Hero stats reflect the visible catalog so "49 tools" never lies about what's reachable.
   const visible = __pmVisible(window.PM_TOOLS);
   const liveCount = visible.filter(t=>t.status==='live').length;
-  const total = visible.length;
-  const planned = visible.filter(t=>t.status==='planned').length;
-  const beta = visible.filter(t=>t.status==='beta').length;
 
   // The flying mini-tile cluster behind the hero copy
   const stack = [
@@ -400,33 +393,19 @@ const HeroPanel = ({ onOpenPalette }) => {
           you need, <em style={{ fontStyle:'italic', color:'var(--accent)' }}>in one studio</em>.
         </h1>
         <p style={{ fontSize:14.5, lineHeight:1.6, color:'var(--text-muted)', margin:'0 0 22px', maxWidth:'46ch' }}>
-          Merge, split, convert, sign, compress, and proofread. Fifty plus tools, organized like a real workspace — private, keyboard-first, built for document craft.
+          Merge, split, convert, sign, compress, and proofread — organized like a real workspace. Private, keyboard-first, built for document craft.
         </p>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
           <button onClick={onOpenPalette} style={{ display:'flex', alignItems:'center', gap:8, padding:'11px 16px', borderRadius:11, background:'var(--accent)', color:'var(--accent-ink)', border:0, fontSize:13, fontWeight:600, cursor:'pointer' }}>
             <Glyph name="search" size={14}/> Find a tool <kbd style={{ fontFamily:'var(--font-mono)', fontSize:10.5, padding:'1px 5px', borderRadius:4, background:'color-mix(in oklab, var(--accent-ink) 14%, transparent)', marginLeft:6 }}>⌘K</kbd>
           </button>
-          <button style={{ display:'flex', alignItems:'center', gap:8, padding:'11px 16px', borderRadius:11, background:'var(--bg-elev-2)', color:'var(--text)', border:'1px solid var(--border)', fontSize:13, cursor:'pointer' }}>
-            <Glyph name="plus" size={14}/> New project
-          </button>
         </div>
       </div>
 
-      <div style={{ position:'relative', zIndex:2, display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:14, marginTop:26, paddingTop:22, borderTop:'1px solid var(--border)' }}>
-        {[
-          { k: liveCount, l:'Live now',       dot:'var(--live)' },
-          { k: beta,      l:'In beta',        dot:'var(--beta)' },
-          { k: planned,   l:'Planned lanes',  dot:'var(--planned)' },
-          { k: '99.98%',  l:'Uptime · 30d',   dot:null },
-        ].map((m,i)=>(
-          <div key={i}>
-            <div style={{ display:'flex', alignItems:'baseline', gap:8 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:32, lineHeight:1, fontWeight:400, letterSpacing:'-.02em' }}>{m.k}</div>
-              {m.dot && <span style={{ width:6, height:6, borderRadius:99, background:m.dot }}/>}
-            </div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6, fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.06em' }}>{m.l}</div>
-          </div>
-        ))}
+      <div style={{ position:'relative', zIndex:2, display:'flex', alignItems:'baseline', gap:10, marginTop:26, paddingTop:22, borderTop:'1px solid var(--border)' }}>
+        <div style={{ fontFamily:'var(--font-serif)', fontSize:32, lineHeight:1, fontWeight:400, letterSpacing:'-.02em' }}>{liveCount}</div>
+        <span style={{ width:6, height:6, borderRadius:99, background:'var(--live)' }}/>
+        <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.06em' }}>tools live</div>
       </div>
     </div>
   );
@@ -505,99 +484,9 @@ const GroupChips = ({ active, onSelect }) => (
   </div>
 );
 
-/* ---------- Recent activity ---------- */
-const RecentStream = () => (
-  <div style={{ padding:'22px 24px', borderRadius:16, background:'var(--bg-elev)', border:'1px solid var(--border)' }}>
-    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-      <Glyph name="clock" size={15}/>
-      <div style={{ fontSize:13.5, fontWeight:600 }}>Recent activity</div>
-      <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>Today · You + 2</span>
-    </div>
-    <div style={{ display:'flex', flexDirection:'column' }}>
-      {window.PM_RECENT.map((r, i) => {
-        const tool = window.PM_TOOLS.find(t => t.slug === r.kind);
-        const grp = tool && window.PM_GROUPS.find(g => g.id === tool.group);
-        const tone = grp?.tone || '#7cb0ff';
-        return (
-          <div key={r.id} style={{
-            display:'flex', alignItems:'center', gap:14, padding:'12px 0',
-            borderTop: i===0 ? 'none' : '1px solid var(--border)',
-          }}>
-            <div style={{ width:34, height:34, borderRadius:9, background:`color-mix(in oklab, ${tone} 14%, transparent)`, border:`1px solid color-mix(in oklab, ${tone} 28%, transparent)`, display:'grid', placeItems:'center', flexShrink:0 }}>
-              <Illust name={tool?.icon || 'merge'} tone={tone} size={20}/>
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13, fontWeight:500 }}>{r.label}</div>
-              <div style={{ fontSize:11.5, color:'var(--text-muted)', fontFamily:'var(--font-mono)', marginTop:2 }}>{r.meta}</div>
-            </div>
-            <div style={{ fontSize:11.5, color:'var(--text-muted)', textAlign:'right' }}>
-              <div>{r.when}</div>
-              <div style={{ color:'var(--text-dim)', fontSize:10.5, fontFamily:'var(--font-mono)' }}>{r.by}</div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
-/* ---------- Throughput ---------- */
-const Throughput = () => {
-  const data = [8,12,9,14,18,16,22,19,24,28,26,32,30,35,33,40,38,44,47,43,49,52];
-  const max = Math.max(...data);
-  const w = 100, h = 40;
-  const pts = data.map((v,i) => [(i/(data.length-1))*w, h - (v/max)*h]).map(p=>p.join(',')).join(' ');
-  return (
-    <div style={{ padding:'20px 22px', borderRadius:16, background:'var(--bg-elev)', border:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:14 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <Glyph name="bolt" size={15}/>
-        <div style={{ fontSize:13.5, fontWeight:600 }}>Throughput</div>
-        <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>22d</span>
-      </div>
-      <div style={{ display:'flex', alignItems:'baseline', gap:10 }}>
-        <div style={{ fontFamily:'var(--font-serif)', fontSize:38, fontWeight:400, lineHeight:1, letterSpacing:'-.02em' }}>14,283</div>
-        <div style={{ fontSize:12, color:'var(--live)', fontFamily:'var(--font-mono)' }}>+38.2%</div>
-      </div>
-      <svg viewBox={`0 0 ${w} ${h+4}`} style={{ width:'100%', height:70 }}>
-        <defs>
-          <linearGradient id="sparkG" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity=".35"/>
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
-          </linearGradient>
-        </defs>
-        <polygon points={`0,${h} ${pts} ${w},${h}`} fill="url(#sparkG)"/>
-        <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-      <div style={{ fontSize:11.5, color:'var(--text-muted)' }}>Docs processed across your workspace.</div>
-    </div>
-  );
-};
-
-/* ---------- Platform map ---------- */
-const PlatformMap = () => {
-  const spokes = window.PM_SPOKES;
-  return (
-    <div style={{ padding:'24px', borderRadius:16, background:'var(--bg-elev)', border:'1px solid var(--border)' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18 }}>
-        <Glyph name="layers" size={15}/>
-        <div style={{ fontSize:13.5, fontWeight:600 }}>Platform map</div>
-        <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>6 lanes</span>
-      </div>
-      <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-        {spokes.map((s, i) => (
-          <div key={s.id} style={{ display:'grid', gridTemplateColumns:'16px 1fr auto', alignItems:'center', gap:14, padding:'12px 4px', borderTop: i===0 ? 'none' : '1px solid var(--border)' }}>
-            <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text-dim)', letterSpacing:'.06em' }}>{String(i+1).padStart(2,'0')}</span>
-            <div>
-              <div style={{ fontSize:13, fontWeight:500 }}>{s.title}</div>
-              <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2 }}>{s.desc}</div>
-            </div>
-            <StatusPill status={s.status}/>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+/* RecentStream, Throughput, PlatformMap removed — they were hardcoded
+   mock data (fake users, fake throughput numbers, fake platform lanes).
+   Real activity tracking ships with Phase 17 (database). */
 
 /* ---------- Tweaks panel ---------- */
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -693,10 +582,7 @@ const App = () => {
       if (shortcutsOpen) return;
       if (e.key === 'g' || e.key === 'G') setView('tools');
       if (e.key === 'h' || e.key === 'H') setView('home');
-      if (e.key === 'r' || e.key === 'R') setView('recent');
       if (e.key === 'p' || e.key === 'P') setView('pinned');
-      if (e.key === 'w' || e.key === 'W') setView('workflow');
-      if (e.key === 'm' || e.key === 'M') setView('map');
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -707,10 +593,7 @@ const App = () => {
   const breadcrumb = (() => {
     if (view === 'home') return ['Workspace', 'Home'];
     if (view === 'tools') return ['Workspace', 'All tools', group === 'all' ? 'All' : (window.PM_GROUPS.find(g=>g.id===group)?.label || 'All')];
-    if (view === 'recent') return ['Workspace', 'Recent'];
     if (view === 'pinned') return ['Workspace', 'Pinned'];
-    if (view === 'workflow') return ['Workspace', 'Workflow'];
-    if (view === 'map') return ['Workspace', 'Platform map'];
     return ['Workspace'];
   })();
 
@@ -733,11 +616,6 @@ const App = () => {
               <HeroPanel onOpenPalette={() => setPaletteOpen(true)}/>
               <PopularStrip onOpen={onRun}/>
               <GroupedCatalog onOpen={onRun} activeGroup={'all'} onSetGroup={()=>{}}/>
-              <div style={{ display:'grid', gridTemplateColumns:'3fr 2fr 2fr', gap:22 }}>
-                <RecentStream/>
-                <Throughput/>
-                <PlatformMap/>
-              </div>
             </div>
           )}
 
@@ -755,7 +633,6 @@ const App = () => {
             </div>
           )}
 
-          {view === 'recent' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Recent activity</h2><RecentStream/></div>)}
           {view === 'pinned' && (
             <div>
               <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Pinned tools</h2>
@@ -764,15 +641,6 @@ const App = () => {
               </div>
             </div>
           )}
-          {view === 'workflow' && (
-            <div>
-              <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Workflow</h2>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:12 }}>
-                {__pmVisible(window.PM_TOOLS).filter(t=>t.cat==='workflow').map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun}/>)}
-              </div>
-            </div>
-          )}
-          {view === 'map' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Platform map</h2><PlatformMap/></div>)}
           {view === 'settings' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Settings</h2><div style={{ padding:22, borderRadius:14, background:'var(--bg-elev)', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:13.5 }}>Use the Tweaks panel (bottom-right) to adjust theme, density, and accent.</div></div>)}
         </div>
       </main>

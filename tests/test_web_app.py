@@ -46,7 +46,7 @@ def test_studio_map_api_exposes_spokes():
     assert response.status_code == 200
     payload = response.json()
     assert payload["service"] == "proofmark-studio"
-    assert len(payload["spokes"]) >= 4
+    assert len(payload["spokes"]) >= 3
     assert any(s["id"] == "pdf" for s in payload["spokes"])
     assert any(s["id"] == "text" for s in payload["spokes"])
 
@@ -208,7 +208,7 @@ def test_shortcuts_modal_lists_known_bindings():
     r = client.get("/static/hub/src/app.jsx")
     src = r.text
     # Each documented shortcut should live in the cheat-sheet payload.
-    for key in ("Cmd+K", "Ctrl+K", "Home", "All tools", "Recent", "Pinned"):
+    for key in ("Cmd+K", "Ctrl+K", "Home", "All tools", "Pinned"):
         assert key in src, f"shortcuts cheat-sheet missing entry for {key!r}"
 
 
