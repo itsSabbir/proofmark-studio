@@ -601,7 +601,9 @@ def local_projects_page() -> HTMLResponse:
     return _minimal_page("Local project inventory", body)
 
 
-@app.get("/og/{slug}.png", response_class=Response)
+# HEAD support so Twitter/Facebook/LinkedIn validators that ping
+# the og:image URL with a HEAD don't get a 405 before fetching the body.
+@app.api_route("/og/{slug}.png", methods=["GET", "HEAD"], response_class=Response)
 def og_card(slug: str) -> Response:
     """Render a 1200x630 OpenGraph card for a tool slug.
 
