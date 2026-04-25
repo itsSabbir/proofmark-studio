@@ -5,10 +5,16 @@
     { "src": "web_app.py", "use": "@vercel/python" }
   ],
   "rewrites": [
-    { "source": "/pdf/:path*",  "destination": "https://proofmark-pdf.vercel.app/:path*" },
-    { "source": "/text",         "destination": "https://proofmark.sabbir.ca/" },
-    { "source": "/text/:path*", "destination": "https://proofmark.sabbir.ca/:path*" },
-    { "source": "/(.*)",        "destination": "/web_app.py" }
+    { "source": "/api/health",         "destination": "/web_app.py" },
+    { "source": "/api/tools",          "destination": "/web_app.py" },
+    { "source": "/api/studio-map",     "destination": "/web_app.py" },
+    { "source": "/api/local-projects", "destination": "/web_app.py" },
+    { "source": "/api/:path*",         "destination": "https://proofmark-pdf.vercel.app/api/:path*" },
+    { "source": "/icon.svg",           "destination": "https://proofmark-pdf.vercel.app/icon.svg" },
+    { "source": "/pdf/:path*",         "destination": "https://proofmark-pdf.vercel.app/:path*" },
+    { "source": "/text",               "destination": "https://proofmark.sabbir.ca/" },
+    { "source": "/text/:path*",        "destination": "https://proofmark.sabbir.ca/:path*" },
+    { "source": "/(.*)",               "destination": "/web_app.py" }
   ],
   "env": {
     "PROOFMARK_PDF_BASE": "",
