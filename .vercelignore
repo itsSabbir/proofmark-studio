@@ -1,0 +1,19 @@
+# Keep the Vercel bundle lean — only what's served at runtime.
+# docs/about.md and docs/changelog.md are read by hub_app.py, so docs/ stays
+# but the screenshot folder (5 MB+) does not.
+docs/screenshots/
+
+# Local-only / dev-only directories
+tests/
+scripts/
+.claude/
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.runtime/
+_archive/
+
+# CI / git metadata that the runtime never needs
+.github/
+.git/
