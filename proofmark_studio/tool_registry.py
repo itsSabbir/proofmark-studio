@@ -93,9 +93,11 @@ TOOLS: Dict[str, Dict[str, object]] = {
     "excel-to-pdf":       _t("Excel to PDF",    "Spreadsheets to PDF reports.",                         "convert-to",   "beta",    "proofmark-pdf"),
     "ppt-to-pdf":         _t("PPT to PDF",      "Decks to PDFs.",                                       "convert-to",   "beta",    "proofmark-pdf"),
     "jpg-to-pdf":         _t("JPG to PDF",      "Combine JPGs into a PDF.",                             "convert-to",   "live",    "proofmark-pdf", "/jpg-to-pdf"),
-    "html-to-pdf":        _t("HTML to PDF",     "Render HTML into PDF.",                                "convert-to",   "live",    "proofmark-pdf", "/html-to-pdf"),
-    "markdown-to-pdf":    _t("Markdown to PDF", "Markdown to final PDF.",                               "convert-to",   "live",    "proofmark-pdf", "/markdown-to-pdf"),
-    "pdf-ocr":            _t("PDF OCR",         "Make scanned PDFs searchable.",                        "convert-to",   "live",    "proofmark-pdf", "/pdf-ocr"),
+    # html-to-pdf + markdown-to-pdf need xhtml2pdf which needs Cairo C libs.
+    # pdf-ocr needs tesseract. None available on Vercel serverless.
+    "html-to-pdf":        _t("HTML to PDF",     "Render HTML into PDF.",                                "convert-to",   "beta",    "proofmark-pdf"),
+    "markdown-to-pdf":    _t("Markdown to PDF", "Markdown to final PDF.",                               "convert-to",   "beta",    "proofmark-pdf"),
+    "pdf-ocr":            _t("PDF OCR",         "Make scanned PDFs searchable.",                        "convert-to",   "beta",    "proofmark-pdf"),
 
     # ── View & Edit ───────────────────────────────────────────────────
     "edit-pdf":           _t("Edit PDF",        "Edit PDF content and layout inline.",                  "edit",         "beta",    "proofmark-pdf"),

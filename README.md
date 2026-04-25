@@ -2,7 +2,7 @@
 
 The working hub for the ProofMark product line — one keyboard-first catalog of document-craft tools, rendered as a React SPA on top of a thin FastAPI shell.
 
-> **Catalog:** 49 tools registered · **30 live** end-to-end · 11 beta · 8 planned.
+> **Catalog:** 49 tools registered · **27 live** end-to-end · 14 beta · 8 planned.
 > **Live URL:** _coming on `proofmarkstudio.com` (Phase 19)_ — currently at the [Vercel preview](https://proofmark-studio-ij7v4i8xk-sabbirs-projects-eab46ba9.vercel.app/).
 
 ![Hub home — hero, popular strip, Organize group](docs/screenshots/hub-home.png)
@@ -66,7 +66,7 @@ Every tool gets its own social-share card at `/og/<slug>.png` (1200×630). Brand
 
 The catalog defaults to **live-only** — only tools that work end-to-end are visible. Flipping `PROOFMARK_SHOW_ALL_TILES=true` restores the full 49-tile catalog for plan review.
 
-| Live-only (default) — `display_counts: 30/0/0` | Roadmap mode — all 49 tiles |
+| Live-only (default) — `display_counts: 27/0/0` | Roadmap mode — all 49 tiles |
 |---|---|
 | ![](docs/screenshots/hub-catalog.png) | ![](docs/screenshots/hub-catalog-roadmap.png) |
 
@@ -131,20 +131,21 @@ Sibling apps receive `PROOFMARK_HUB_URL=http://127.0.0.1:8020` from the launcher
 
 ## Tool catalog
 
-### Live (30) — work end-to-end
+### Live (27) — work end-to-end on Vercel
 
 **Organize** — merge-pdf, split-pdf, extract-pdf-pages, organize-pdf, compress-pdf, rotate-pdf, delete-pdf-pages
 **Convert from PDF** — pdf-to-jpg, pdf-to-png, pdf-to-text, pdf-to-markdown, pdf-to-html
-**Convert to PDF** — jpg-to-pdf, html-to-pdf, markdown-to-pdf, pdf-ocr
+**Convert to PDF** — jpg-to-pdf
 **View & Edit** — number-pages, crop-pdf, redact-pdf, watermark-pdf, pdf-form-filler
 **Sign & Secure** — sign-pdf, unlock-pdf, protect-pdf, flatten-pdf
 **Proofing** — text-inspection, inspect-hidden, normalize-whitespace, review-typography, export-cleanup-report
 
-### Beta (11) — hidden by default
+### Beta (14) — hidden by default
 
 Stays in the registry for the roadmap. Visible only with `PROOFMARK_SHOW_ALL_TILES=true`.
 
-- AI — `ai-pdf-assistant`, `chat-with-pdf`, `ai-pdf-summarizer`, `translate-pdf` (call Anthropic; pending per-IP rate limit + budget alarm before going live to avoid API-key drain)
+- Convert to PDF: `html-to-pdf`, `markdown-to-pdf` (need xhtml2pdf which needs Cairo C libs — not on Vercel), `pdf-ocr` (needs tesseract — not on Vercel)
+- AI — `ai-pdf-assistant`, `chat-with-pdf`, `ai-pdf-summarizer`, `translate-pdf` (call Anthropic; pending per-IP rate limit + budget alarm)
 - Office → PDF: `word-to-pdf`, `excel-to-pdf`, `ppt-to-pdf` (require self-hosted LibreOffice)
 - View & Edit: `edit-pdf`, `pdf-annotator`, `pdf-reader`
 - Sign & Secure: `request-signatures`
