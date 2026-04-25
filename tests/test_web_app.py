@@ -91,7 +91,7 @@ def test_sitemap_enumerates_live_tools():
     r = client.get("/sitemap.xml")
     assert r.status_code == 200
     live_slugs = [s for s, t in reg.TOOLS.items() if t["status"] == "live"]
-    assert len(live_slugs) >= 30  # guardrail: sweep keeps this honest
+    assert len(live_slugs) >= 25  # guardrail: 27 live after Vercel-compat demotions
     for slug in live_slugs:
         assert f"/tool/{slug}" in r.text, f"sitemap missing /tool/{slug}"
 
@@ -482,7 +482,7 @@ def test_api_tools_returns_full_registry():
     # Workflow tiles stay planned until Phase 17 infra (DB+auth) lands.
     assert "project-intake" in tools
     assert tools["project-intake"]["status"] == "planned"
-    # Counts sanity — post phase-15/16 promotion sweep baseline
+    # Counts sanity — 27 live after Vercel-compat demotions (AI + xhtml2pdf + OCR)
     counts = payload["counts"]
     assert counts["total"] >= 40
-    assert counts["live"] >= 30
+    assert counts["live"] >= 25

@@ -49,9 +49,10 @@ const TOOLS = [
   { slug:'excel-to-pdf',    title:'Excel → PDF',    group:'convert-to',   cat:'convert',  status:'beta',    icon:'xlsx', desc:'Spreadsheets to PDF reports.' },
   { slug:'ppt-to-pdf',      title:'PPT → PDF',      group:'convert-to',   cat:'convert',  status:'beta',    icon:'pptx', desc:'Decks to PDFs.' },
   { slug:'jpg-to-pdf',      title:'JPG → PDF',      group:'convert-to',   cat:'convert',  status:'live',    icon:'jpg',  desc:'Combine JPGs into a PDF.', popular:true },
-  { slug:'html-to-pdf',     title:'HTML → PDF',     group:'convert-to',   cat:'convert',  status:'live',    icon:'html', desc:'Render HTML into PDF.' },
-  { slug:'markdown-to-pdf', title:'Markdown → PDF', group:'convert-to',   cat:'convert',  status:'live',    icon:'md',   desc:'Markdown to final PDF.' },
-  { slug:'pdf-ocr',         title:'PDF OCR',        group:'convert-to',   cat:'convert',  status:'live',    icon:'ocr',  desc:'Make scanned PDFs searchable.' },
+  // html-to-pdf + markdown-to-pdf need xhtml2pdf (Cairo). pdf-ocr needs tesseract. Not on Vercel.
+  { slug:'html-to-pdf',     title:'HTML → PDF',     group:'convert-to',   cat:'convert',  status:'beta',    icon:'html', desc:'Render HTML into PDF.' },
+  { slug:'markdown-to-pdf', title:'Markdown → PDF', group:'convert-to',   cat:'convert',  status:'beta',    icon:'md',   desc:'Markdown to final PDF.' },
+  { slug:'pdf-ocr',         title:'PDF OCR',        group:'convert-to',   cat:'convert',  status:'beta',    icon:'ocr',  desc:'Make scanned PDFs searchable.' },
 
   // VIEW & EDIT
   { slug:'edit-pdf',        title:'Edit PDF',        group:'edit',  cat:'edit',  status:'beta',    icon:'pencil', desc:'Edit PDF content and layout inline.' },
