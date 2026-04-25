@@ -20,6 +20,7 @@ const SHORTCUTS = [
   { combo: ['H'],                label: 'Go to Home' },
   { combo: ['G'],                label: 'Go to All tools' },
   { combo: ['P'],                label: 'Go to Pinned' },
+  { combo: ['M'],                label: 'Go to Platform' },
   { combo: ['Esc'],              label: 'Close dialogs / drawers' },
 ];
 
@@ -484,9 +485,39 @@ const GroupChips = ({ active, onSelect }) => (
   </div>
 );
 
-/* RecentStream, Throughput, PlatformMap removed — they were hardcoded
-   mock data (fake users, fake throughput numbers, fake platform lanes).
-   Real activity tracking ships with Phase 17 (database). */
+/* RecentStream + Throughput removed — they were hardcoded mock data
+   (fake users, fake doc names, fake throughput numbers). Real activity
+   tracking and metrics ship with Phase 17 (database). */
+
+/* ---------- Platform map (real components only) ---------- */
+const PlatformMap = () => {
+  const spokes = [
+    { id:'pdf',  title:'ProofMark PDF',    desc:'Merge, split, compress, convert, sign, watermark, redact.', status:'live', url:'/go/proofmark-pdf' },
+    { id:'text', title:'Text Inspection',  desc:'Surface hidden characters, normalize whitespace, review typography.', status:'live', url:'/go/text-inspection' },
+    { id:'site', title:'ProofMark Site',   desc:'Public brand entry point and project home.', status:'live', url:'/go/proofmark-site' },
+  ];
+  return (
+    <div style={{ padding:'24px', borderRadius:16, background:'var(--bg-elev)', border:'1px solid var(--border)' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18 }}>
+        <Glyph name="layers" size={15}/>
+        <div style={{ fontSize:13.5, fontWeight:600 }}>Platform</div>
+        <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>{spokes.length} components</span>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+        {spokes.map((s, i) => (
+          <a key={s.id} href={s.url} style={{ display:'grid', gridTemplateColumns:'16px 1fr auto', alignItems:'center', gap:14, padding:'12px 4px', borderTop: i===0 ? 'none' : '1px solid var(--border)', color:'inherit', textDecoration:'none' }}>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text-dim)', letterSpacing:'.06em' }}>{String(i+1).padStart(2,'0')}</span>
+            <div>
+              <div style={{ fontSize:13, fontWeight:500 }}>{s.title}</div>
+              <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2 }}>{s.desc}</div>
+            </div>
+            <StatusPill status={s.status}/>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /* ---------- Tweaks panel ---------- */
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -583,6 +614,7 @@ const App = () => {
       if (e.key === 'g' || e.key === 'G') setView('tools');
       if (e.key === 'h' || e.key === 'H') setView('home');
       if (e.key === 'p' || e.key === 'P') setView('pinned');
+      if (e.key === 'm' || e.key === 'M') setView('map');
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -594,6 +626,7 @@ const App = () => {
     if (view === 'home') return ['Workspace', 'Home'];
     if (view === 'tools') return ['Workspace', 'All tools', group === 'all' ? 'All' : (window.PM_GROUPS.find(g=>g.id===group)?.label || 'All')];
     if (view === 'pinned') return ['Workspace', 'Pinned'];
+    if (view === 'map') return ['Workspace', 'Platform'];
     return ['Workspace'];
   })();
 
@@ -616,6 +649,7 @@ const App = () => {
               <HeroPanel onOpenPalette={() => setPaletteOpen(true)}/>
               <PopularStrip onOpen={onRun}/>
               <GroupedCatalog onOpen={onRun} activeGroup={'all'} onSetGroup={()=>{}}/>
+              <PlatformMap/>
             </div>
           )}
 
@@ -641,6 +675,7 @@ const App = () => {
               </div>
             </div>
           )}
+          {view === 'map' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Platform</h2><PlatformMap/></div>)}
           {view === 'settings' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Settings</h2><div style={{ padding:22, borderRadius:14, background:'var(--bg-elev)', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:13.5 }}>Use the Tweaks panel (bottom-right) to adjust theme, density, and accent.</div></div>)}
         </div>
       </main>
