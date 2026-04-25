@@ -209,7 +209,7 @@ const Sidebar = ({ active, onSelect, onOpenPalette, density }) => {
 
       <div style={{ marginTop:22 }}>
         <div style={{ fontSize:10, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--text-dim)', fontWeight:600, padding:'8px 10px 6px', fontFamily:'var(--font-mono)' }}>Pinned tools</div>
-        {window.PM_TOOLS.filter(t=>t.pin).map(t => (
+        {__pmVisible(window.PM_TOOLS).filter(t=>t.pin).map(t => (
           <button key={t.slug} onClick={() => onSelect('tool:'+t.slug)} style={{
             display:'flex', alignItems:'center', gap:10,
             width:'100%', padding:'7px 10px', borderRadius:8,

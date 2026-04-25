@@ -2,6 +2,14 @@
 
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
+/* ---------- Display filter ----------
+ * Server sets t.hidden = true for beta/planned/flag-off tiles when the catalog
+ * is in live-only mode (PROOFMARK_SHOW_ALL_TILES=false, the default). Every
+ * render surface goes through __pmVisible() so only tiles that work fully show
+ * up. Roadmap mode (server env var flipped) leaves t.hidden falsy, so the full
+ * catalog renders. */
+const __pmVisible = (arr) => arr.filter(t => !t.hidden);
+
 /* ---------- Shortcuts cheat-sheet ----------
  * `?` opens this modal; it lists every keyboard binding the hub registers
  * so users don't have to guess. Kept alongside the palette because they
@@ -70,7 +78,7 @@ const CommandPalette = ({ open, onClose, onRun }) => {
   }, [open]);
 
   const results = useMemo(() => {
-    const tools = window.PM_TOOLS;
+    const tools = __pmVisible(window.PM_TOOLS);
     const term = q.trim().toLowerCase();
     if (!term) {
       return [
@@ -332,10 +340,12 @@ const GroupHeader = ({ group, count, onViewAll }) => (
 
 /* ---------- Hero: visual-first ---------- */
 const HeroPanel = ({ onOpenPalette }) => {
-  const liveCount = window.PM_TOOLS.filter(t=>t.status==='live').length;
-  const total = window.PM_TOOLS.length;
-  const planned = window.PM_TOOLS.filter(t=>t.status==='planned').length;
-  const beta = window.PM_TOOLS.filter(t=>t.status==='beta').length;
+  // Hero stats reflect the visible catalog so "49 tools" never lies about what's reachable.
+  const visible = __pmVisible(window.PM_TOOLS);
+  const liveCount = visible.filter(t=>t.status==='live').length;
+  const total = visible.length;
+  const planned = visible.filter(t=>t.status==='planned').length;
+  const beta = visible.filter(t=>t.status==='beta').length;
 
   // The flying mini-tile cluster behind the hero copy
   const stack = [
@@ -424,7 +434,7 @@ const HeroPanel = ({ onOpenPalette }) => {
 
 /* ---------- Popular strip ---------- */
 const PopularStrip = ({ onOpen }) => {
-  const pops = window.PM_TOOLS.filter(t => t.popular);
+  const pops = __pmVisible(window.PM_TOOLS).filter(t => t.popular);
   return (
     <div>
       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
@@ -445,7 +455,7 @@ const GroupedCatalog = ({ onOpen, activeGroup, onSetGroup }) => {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:40 }}>
       {groups.map(g => {
-        const items = window.PM_TOOLS.filter(t => t.group === g.id);
+        const items = __pmVisible(window.PM_TOOLS).filter(t => t.group === g.id);
         return (
           <section key={g.id} id={`g-${g.id}`}>
             <GroupHeader group={g} count={items.length}/>
@@ -474,10 +484,10 @@ const GroupChips = ({ active, onSelect }) => (
       color:    active === 'all' ? 'var(--bg)'   : 'var(--text-muted)',
       border:'1px solid ' + (active==='all' ? 'var(--text)' : 'var(--border)'),
       fontSize:12.5, fontWeight:500, cursor:'pointer',
-    }}>All <span style={{ fontFamily:'var(--font-mono)', fontSize:10.5, padding:'1px 6px', borderRadius:999, background: active==='all' ? 'color-mix(in oklab, var(--bg) 30%, transparent)' : 'var(--bg-inset)' }}>{window.PM_TOOLS.length}</span></button>
+    }}>All <span style={{ fontFamily:'var(--font-mono)', fontSize:10.5, padding:'1px 6px', borderRadius:999, background: active==='all' ? 'color-mix(in oklab, var(--bg) 30%, transparent)' : 'var(--bg-inset)' }}>{__pmVisible(window.PM_TOOLS).length}</span></button>
     {window.PM_GROUPS.map(g => {
       const isActive = active === g.id;
-      const count = window.PM_TOOLS.filter(t => t.group === g.id).length;
+      const count = __pmVisible(window.PM_TOOLS).filter(t => t.group === g.id).length;
       return (
         <button key={g.id} onClick={() => onSelect(g.id)} style={{
           display:'flex', alignItems:'center', gap:8, padding:'7px 12px', borderRadius:999,
@@ -736,7 +746,7 @@ const App = () => {
               <div style={{ marginBottom:10 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em', fontWeight:600 }}>Catalog</div>
                 <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, lineHeight:1, letterSpacing:'-.02em', margin:'10px 0 6px' }}>
-                  All tools <span style={{ color:'var(--text-dim)' }}>· {window.PM_TOOLS.length}</span>
+                  All tools <span style={{ color:'var(--text-dim)' }}>· {__pmVisible(window.PM_TOOLS).length}</span>
                 </h2>
                 <p style={{ fontSize:13.5, color:'var(--text-muted)', margin:'0 0 6px' }}>Click a category to filter, or scroll through grouped sections below.</p>
               </div>
@@ -750,7 +760,7 @@ const App = () => {
             <div>
               <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Pinned tools</h2>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:12 }}>
-                {window.PM_TOOLS.filter(t=>t.pin).map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun}/>)}
+                {__pmVisible(window.PM_TOOLS).filter(t=>t.pin).map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun}/>)}
               </div>
             </div>
           )}
@@ -758,7 +768,7 @@ const App = () => {
             <div>
               <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Workflow</h2>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:12 }}>
-                {window.PM_TOOLS.filter(t=>t.cat==='workflow').map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun}/>)}
+                {__pmVisible(window.PM_TOOLS).filter(t=>t.cat==='workflow').map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun}/>)}
               </div>
             </div>
           )}
@@ -793,6 +803,9 @@ const __pmSyncFromBackend = async () => {
       if (s.url)    t.url    = s.url;  // drawer keeps this for potential deep-link
       // Flag-downgraded live tools carry `paused: true` so the pill can show it.
       if (s.paused) t.paused = true;
+      // Display filter: beta/planned tiles hide by default (live-only catalog).
+      // Server flips `display:true` in roadmap mode (PROOFMARK_SHOW_ALL_TILES=true).
+      t.hidden = s.display === false;
     });
   } catch (err) {
     console.warn('[registry] sync failed, using hardcoded catalog', err);

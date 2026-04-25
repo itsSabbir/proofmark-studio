@@ -4,6 +4,10 @@ Every tool in the 49-tool catalog is gated by a per-tool env var. Flipping
 `TOOL_<SLUG>_ENABLED=false` (or `0` / `off` / `no` / `disabled`) demotes the
 tile to `"planned"` at request time — no redeploy, no code change.
 
+A separate global switch, **`PROOFMARK_SHOW_ALL_TILES`**, chooses whether
+non-live tiles (beta / planned) appear in the user-facing catalog at all.
+See [Catalog display mode](#catalog-display-mode) below.
+
 ## Behavior
 
 - **Default is ON** (opt-out). Missing env var → enabled.
@@ -104,3 +108,47 @@ vercel --prod   # or toggle in dashboard
 
 Tile reverts to `"paused"` on the next cache miss (≤60s). Fix forward, then
 remove the env var to re-enable.
+
+---
+
+## Catalog display mode
+
+The catalog defaults to **live-only**: users see only tools that work
+end-to-end. Beta and planned tiles stay in the registry (for the roadmap)
+but are hidden from every public surface.
+
+### Env var
+
+| Name | Values | Default | Effect |
+|---|---|---|---|
+| `PROOFMARK_SHOW_ALL_TILES` | `true` / `1` / `on` / `yes` / `enabled` | _(unset / false)_ | When truthy, beta + planned tiles return to the catalog, sitemap, palette, and `/tool/{slug}` router. |
+
+### Behaviour matrix
+
+| Mode | Catalog UI | `/sitemap.xml` | `/tool/{beta-or-planned-slug}` | `/tool/{live-slug}` |
+|---|---|---|---|---|
+| Live-only (default) | Only live+enabled tiles render. Counts, group chips, popular strip, pinned, workflow views all filter. | Only displayed slugs. | `404` | Redirects to sibling app. |
+| Roadmap (`PROOFMARK_SHOW_ALL_TILES=true`) | Every tile renders with its status pill. | Every displayed slug incl. beta. | Renders the stub with `Return to the hub` + parent-app button. | Redirects to sibling app. |
+
+### Interaction with per-tool flags
+
+Per-tool `TOOL_<SLUG>_ENABLED=false` still demotes a live tile to `paused`.
+In live-only mode, a paused tile is **hidden** from the catalog but the
+`/tool/{slug}` URL keeps rendering the paused stub so bookmarked links
+explain *why* the tool is temporarily down — users don't hit a 404.
+
+### API contract
+
+`GET /api/tools` now returns:
+
+```json
+{
+  "tools": { "<slug>": { "status": "...", "display": true|false, ... } },
+  "counts":         { "total": 49, "live": 36, "beta": 8, "planned": 5 },
+  "display_counts": { "total": 36, "live": 36, "beta": 0, "planned": 0 }
+}
+```
+
+`counts` is the raw registry view — unchanged since Phase 10.5.
+`display_counts` is what the user actually sees. The SPA keys off
+`tools[slug].display` to decide render visibility.

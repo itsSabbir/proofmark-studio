@@ -4,7 +4,8 @@ Release notes and tool-promotion history. Dates follow the commit order on `main
 
 ## Phase 18 — polish + SEO (in progress)
 
-- Sitemap now enumerates every live and beta tool, respecting feature flags.
+- Catalog is now **live-only by default**. Beta and planned tiles stay in the registry for the roadmap but are hidden from every user-facing surface: catalog, sitemap, command palette, pinned/workflow views, and the `/tool/{slug}` router. Roadmap mode (`PROOFMARK_SHOW_ALL_TILES=true`) restores the full catalog for local dev and plan review.
+- Sitemap enumerates every displayed tool, respecting feature flags and the display mode.
 - Tool stub pages carry `meta description`, OpenGraph, and Twitter card tags so social shares aren't naked.
 - `/about` and `/changelog` pages render from first-party Markdown via a tiny safe `markdown_lite` module — no new dependency added.
 - `?` key opens a keyboard-shortcuts cheat-sheet that documents every binding the hub registers.

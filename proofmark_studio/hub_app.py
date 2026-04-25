@@ -150,11 +150,22 @@ def api_local_projects() -> JSONResponse:
 
 @app.get("/api/tools")
 def api_tools() -> JSONResponse:
-    """Runtime tool registry \u2014 React catalog merges this into its display metadata.
+    """Runtime tool registry — React catalog merges this into its display metadata.
+
     Keeping URL+status server-side means the React catalog can't drift from reality.
-    Per-tool env flags (TOOL_<SLUG>_ENABLED=false) demote the tile to 'planned'."""
+    Per-tool env flags (TOOL_<SLUG>_ENABLED=false) demote the tile to 'planned'.
+    PROOFMARK_SHOW_ALL_TILES toggles roadmap-view (default: live-only).
+
+    Contract:
+      * ``counts`` — raw registry view, unchanged since Phase 10.5. Sums over
+        effective status (live/beta/planned) after per-tool flag demotion.
+      * ``display_counts`` — post-filter view. What the catalog actually shows.
+      * ``tools[slug].display`` — True if the tile should appear on user-facing
+        surfaces (catalog, sitemap, router redirect).
+    """
     tools: Dict[str, Dict[str, object]] = {}
     counts = {"total": 0, "live": 0, "beta": 0, "planned": 0}
+    display_counts = {"total": 0, "live": 0, "beta": 0, "planned": 0}
     for slug, t in _registry.TOOLS.items():
         entry: Dict[str, object] = {
             "status": t["status"], "parent": t["parent"], "url": t["url"],
@@ -165,26 +176,40 @@ def api_tools() -> JSONResponse:
             entry["status"] = "planned"
             entry["paused"] = True
             entry["url"] = None
+        entry["display"] = _flags.is_displayed(slug, entry)
         tools[slug] = entry
         counts["total"] += 1
         counts[entry["status"]] = counts.get(entry["status"], 0) + 1
+        if entry["display"]:
+            display_counts["total"] += 1
+            display_counts[entry["status"]] = display_counts.get(entry["status"], 0) + 1
     return JSONResponse({
         "service": "proofmark-studio",
         "tools": tools,
         "counts": counts,
+        "display_counts": display_counts,
     })
 
 
 # ─── Tool router ─────────────────────────────────────────────────────────
 @app.get("/tool/{slug}", response_class=HTMLResponse)
 def tool_router(slug: str, request: Request):
-    """Live tools redirect to sibling app. Beta/planned or flag-off \u2192 stub."""
+    """Route to sibling app (live) or render a stub (beta/planned/flag-off).
+
+    Live-only mode (``PROOFMARK_SHOW_ALL_TILES=false``, default) 404s on
+    inherently non-live tiles so crawlers/bookmarks can't surface half-built
+    tools. Flag-off on a live tile still renders the paused stub so returning
+    users see *why* a previously-working tool is temporarily down.
+    """
     entry = _registry.TOOLS.get(slug)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"Unknown tool: {slug}")
+    # Non-live tiles stay invisible unless roadmap mode is on.
+    if not _flags.show_all_tiles() and entry["status"] != "live":
+        raise HTTPException(status_code=404, detail=f"Unknown tool: {slug}")
     if entry["status"] == "live" and entry["url"] and _flags.is_enabled(slug):
         return RedirectResponse(url=entry["url"], status_code=307)
-    # Beta, planned, or flag-demoted \u2192 stub page
+    # Beta, planned, or flag-demoted → stub page
     demoted = dict(entry)
     if not _flags.is_enabled(slug):
         demoted["status"] = "planned"
@@ -547,10 +572,11 @@ def sitemap(request: Request) -> Response:
     don't index pages that resolve to a 'paused' stub.
     """
     origin = str(request.base_url).rstrip("/")
+    # Only advertise tools that actually render for end users.
     tool_paths = [
         f"/tool/{slug}"
         for slug, entry in _registry.TOOLS.items()
-        if entry["status"] in {"live", "beta"} and _flags.is_enabled(slug)
+        if _flags.is_displayed(slug, entry)
     ]
     tags = "".join(
         f"<url><loc>{origin}{p}</loc></url>"
