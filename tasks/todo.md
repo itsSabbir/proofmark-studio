@@ -25,7 +25,7 @@ https://proofmark-studio-ij7v4i8xk-sabbirs-projects-eab46ba9.vercel.app/
 - `C:\Users\sabbir\Dev\GitHub\tools\proofmark-pdf` (sibling)
 - `C:\Users\sabbir\Dev\GitHub\tools\text-cleaner` (sibling)
 
-**Currently: 36 tools live, 8 beta, 5 planned.**
+**Currently: 30 tools live, 11 beta, 8 planned.**
 
 **Catalog display policy:** live-only by default — users only see tiles that
 work end-to-end. Beta + planned tiles stay registered for the roadmap but

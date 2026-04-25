@@ -4,6 +4,7 @@ Release notes and tool-promotion history. Dates follow the commit order on `main
 
 ## Phase 18 — polish + SEO (in progress)
 
+- **Launch readiness sweep.** AI tiles (`ai-pdf-assistant`, `chat-with-pdf`, `ai-pdf-summarizer`, `translate-pdf`) demoted from `live` → `beta` so the live-only catalog hides them — they call Anthropic and an unauthenticated visitor could otherwise drain the API key. They'll come back live once a per-IP rate limit + budget alarm ship. `/privacy` and `/terms` rewritten to be accurate (server-processed, in-memory, never persisted) instead of the old "runs locally in your browser" claim. GitHub Actions CI runs `pytest` on every push and PR.
 - Dynamic **OpenGraph cards** at `/og/<slug>.png` — 1200×630 PNGs rendered with the brand fonts (Instrument Serif + Geist), group color tints the accent stripe and status pill, in-process LRU cache plus HTTP `Cache-Control` for crawler-friendly serving. Tool stub pages and the markdown content pages now reference their own OG image so social shares look like a real product.
 - Catalog is now **live-only by default**. Beta and planned tiles stay in the registry for the roadmap but are hidden from every user-facing surface: catalog, sitemap, command palette, pinned/workflow views, and the `/tool/{slug}` router. Roadmap mode (`PROOFMARK_SHOW_ALL_TILES=true`) restores the full catalog for local dev and plan review.
 - Sitemap enumerates every displayed tool, respecting feature flags and the display mode.
