@@ -131,6 +131,7 @@ const Sidebar = ({ active, onSelect, onOpenPalette, density }) => {
     { id:'home',     label:'Home',      g:'home',   kbd:'H' },
     { id:'tools',    label:'All tools', g:'grid',   kbd:'G' },
     { id:'pinned',   label:'Pinned',    g:'pin',    kbd:'P' },
+    { id:'map',      label:'Platform',  g:'layers', kbd:'M' },
   ];
   const bottom = [
     { id:'settings', label:'Settings',  g:'settings' },
