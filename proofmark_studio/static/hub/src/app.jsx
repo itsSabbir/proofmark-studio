@@ -436,6 +436,7 @@ const GroupedCatalog = ({ onOpen, activeGroup, onSetGroup }) => {
     <div style={{ display:'flex', flexDirection:'column', gap:40 }}>
       {groups.map(g => {
         const items = __pmVisible(window.PM_TOOLS).filter(t => t.group === g.id);
+        if (items.length === 0) return null;
         return (
           <section key={g.id} id={`g-${g.id}`}>
             <GroupHeader group={g} count={items.length}/>
@@ -468,6 +469,7 @@ const GroupChips = ({ active, onSelect }) => (
     {window.PM_GROUPS.map(g => {
       const isActive = active === g.id;
       const count = __pmVisible(window.PM_TOOLS).filter(t => t.group === g.id).length;
+      if (count === 0) return null;
       return (
         <button key={g.id} onClick={() => onSelect(g.id)} style={{
           display:'flex', alignItems:'center', gap:8, padding:'7px 12px', borderRadius:999,
