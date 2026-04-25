@@ -32,6 +32,7 @@ except ImportError:
 
 from proofmark_studio import feature_flags as _flags
 from proofmark_studio import markdown_lite as _md
+from proofmark_studio import og_image as _og
 from proofmark_studio import tool_registry as _registry
 
 # ─── Constants ────────────────────────────────────────────────────────────
@@ -253,9 +254,13 @@ def _render_stub(slug: str, entry: Dict[str, object]) -> str:
   <meta property="og:description" content="{meta_desc}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{APP_NAME}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="/og/{slug}.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{meta_title}">
   <meta name="twitter:description" content="{meta_desc}">
+  <meta name="twitter:image" content="/og/{slug}.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -484,7 +489,11 @@ def _render_markdown_page(slug: str, title: str, description: str) -> HTMLRespon
   <meta property="og:description" content="{meta_desc}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{APP_NAME}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="/og/{slug}.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="/og/{slug}.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -552,6 +561,35 @@ def local_projects_page() -> HTMLResponse:
         "</ul>"
     )
     return _minimal_page("Local project inventory", body)
+
+
+@app.get("/og/{slug}.png", response_class=Response)
+def og_card(slug: str) -> Response:
+    """Render a 1200x630 OpenGraph card for a tool slug.
+
+    Slugs that don't exist fall back to the brand-level card so social
+    sharing of `/about`, `/changelog`, and the root URL stays branded.
+    Cached via in-process LRU keyed on visible content.
+    """
+    entry = _registry.TOOLS.get(slug)
+    if entry is None:
+        # Brand-level fallback for /og/proofmark-studio.png et al.
+        title = "ProofMark Studio"
+        desc = "Every PDF tool you need, in one studio. Merge, split, convert, sign, compress, and proofread — keyboard-first, private, and built for document craft."
+        status = "live"
+        group_label = "Working hub"
+        tone = "#7cb0ff"
+    else:
+        title = str(entry["title"])
+        desc = str(entry["desc"])
+        status = "live" if _flags.is_enabled(slug) and entry["status"] == "live" else str(entry["status"])
+        group_meta = _registry.GROUPS.get(str(entry["group"]), {"label": str(entry["group"]), "tone": "#7cb0ff"})
+        group_label = str(group_meta["label"])
+        tone = str(group_meta["tone"])
+
+    png = _og.render_cached(slug, title, desc, status, group_label, tone)
+    headers = {"Cache-Control": "public, max-age=3600, s-maxage=86400"}
+    return Response(content=png, media_type="image/png", headers=headers)
 
 
 @app.get("/robots.txt", response_class=Response)
