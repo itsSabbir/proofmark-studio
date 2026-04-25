@@ -364,12 +364,50 @@ def _minimal_page(title: str, body_html: str) -> HTMLResponse:
 
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy() -> HTMLResponse:
-    return _minimal_page("Privacy Policy", "<p>ProofMark Studio runs locally in your browser and does not collect personal data. Files you process stay on your machine unless you explicitly export them.</p>")
+    body = (
+        "<p><strong>What we collect.</strong> Nothing about you. ProofMark Studio "
+        "has no accounts, no analytics, no third-party trackers, no cookies set by us. "
+        "Standard server access logs (IP address, request path, timestamp) may be "
+        "retained by our hosting provider for abuse and reliability monitoring.</p>"
+        "<p><strong>How files are processed.</strong> When you upload a file to a "
+        "tool, it is sent to our server for processing and held in memory only for "
+        "the duration of that single request. We do not write your files to disk, "
+        "do not retain them after the response is sent, and do not share them with "
+        "third parties.</p>"
+        "<p><strong>What we do not do.</strong> We do not train models on your "
+        "files. We do not sell or share data. We do not embed marketing pixels.</p>"
+        "<p><strong>AI tools (currently disabled).</strong> If and when AI-backed "
+        "tiles return, this page will be updated to disclose any third-party model "
+        "providers (e.g. Anthropic) that file content would be sent to.</p>"
+        "<p><strong>Contact.</strong> Questions or takedown requests: open an "
+        "issue at <a href='https://github.com/itsSabbir/proofmark-studio/issues'>"
+        "github.com/itsSabbir/proofmark-studio</a>.</p>"
+    )
+    return _minimal_page("Privacy Policy", body)
 
 
 @app.get("/terms", response_class=HTMLResponse)
 def terms() -> HTMLResponse:
-    return _minimal_page("Terms of Use", "<p>ProofMark Studio is provided as-is for document work. You are responsible for the content you process. No warranty, no guarantees \u2014 you own the results.</p>")
+    body = (
+        "<p><strong>As-is service.</strong> ProofMark Studio is provided as-is, "
+        "with no warranty of any kind, express or implied. The maintainers are "
+        "not liable for any loss, damage, or corruption of files or data arising "
+        "from use of this service.</p>"
+        "<p><strong>Your content, your responsibility.</strong> You retain all "
+        "rights to files you upload. You are responsible for ensuring you have "
+        "the legal right to process those files, and for the lawfulness of the "
+        "content itself. Do not upload content that infringes third-party rights, "
+        "violates applicable law, or contains malware.</p>"
+        "<p><strong>Acceptable use.</strong> No automated abuse, scraping, or "
+        "denial-of-service. Reasonable per-request size and rate limits may be "
+        "enforced at the network layer; sustained abuse may result in IP-level "
+        "blocks.</p>"
+        "<p><strong>Reliability.</strong> The service is best-effort. There is no "
+        "uptime SLA. Tools may be paused, deprecated, or removed without notice.</p>"
+        "<p><strong>Open source.</strong> The hub is open source under its "
+        "repository license. Sibling apps may carry their own licenses.</p>"
+    )
+    return _minimal_page("Terms of Use", body)
 
 
 @app.exception_handler(StarletteHTTPException)
