@@ -149,3 +149,46 @@ Because each project is independent, a broken release in one doesn't cascade.
 - New tool in an existing sibling → 2-file change (registry + tiles). No deployment coordination.
 - New sibling app → new Vercel project + one line in `vercel.json`. Adds a whole tool family without touching the existing sub-apps.
 - Each sibling scales independently on Vercel's serverless runtime — heavy PDF work doesn't starve the text tool.
+
+---
+
+## Soft-launch operational posture
+
+While the catalog is on the Vercel **Hobby (free) tier**, abuse protection comes from a layered stack rather than paid bot management. This is sufficient for soft launch (private link, friends, small communities). For HN / press-driven traffic, revisit the items in *Hardening before public launch* below.
+
+### What's already there (free, automatic)
+
+- **Edge DDoS mitigation.** Vercel applies always-on volumetric attack protection at the CDN layer for every request, regardless of plan. No knobs, no setup.
+- **Serverless request body cap.** Hobby tier limits POST bodies to ~4.5 MB per request. This is an effective natural rate limit for PDF-heavy abuse vectors — uploads larger than that fail at the edge before the function spins up.
+- **10s function timeout.** A worst-case slow request can't tie up resources for long. Hung tools fail fast.
+- **HTTPS-only via Vercel cert.** All traffic is encrypted; no plaintext fallback.
+- **Security headers** set in [`vercel.json`](../vercel.json):
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (HSTS)
+  - `X-Frame-Options: DENY`
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()`
+  - `Cross-Origin-Opener-Policy: same-origin`
+- **Cache-Control on edge-cached resources** (`/og/<slug>.png`, `/static/*`, `/sitemap.xml`) so repeat traffic is served from the edge without invoking a function.
+- **AI tiles disabled.** The four Anthropic-backed tiles (`ai-pdf-assistant`, `chat-with-pdf`, `ai-pdf-summarizer`, `translate-pdf`) are registered as `beta` so the live-only catalog hides them. No anonymous visitor can drain the API key by hitting `/tool/<slug>`.
+
+### What we explicitly chose **not** to do for soft launch
+
+- **No application-level rate limiter.** Each Vercel function invocation is a fresh process; in-process counters don't work serverlessly. A real per-IP limiter needs Redis/Upstash or Vercel KV — out of scope until paid tier is justified by traffic.
+- **No bot management / WAF rules.** Vercel Pro feature; not needed at soft-launch scale.
+- **No custom domain.** `proofmark-studio.vercel.app` is the public URL. A custom domain (`proofmarkstudio.com`) waits for actual launch sign-off.
+
+### Hardening before public launch
+
+When traffic justifies the upgrade (or a real public push is planned), close these gaps in order:
+
+1. **Buy `proofmarkstudio.com`** and attach to the Vercel project (Phase 19 in `tasks/todo.md`).
+2. **Per-IP rate limit** on `/api/*` and tool routes — Upstash Redis + a tiny middleware (15-min sliding window, 60 requests/IP). Free tier covers this comfortably.
+3. **Sentry (or similar) error tracking** — currently if a tool 500s in production, only the user complaining tells you about it.
+4. **Daily cost alarm on Anthropic** before re-promoting AI tiles to live, even after the rate limit is in place.
+5. **Vercel Pro** ($20/mo) if traffic outgrows Hobby — unlocks custom rules, longer timeouts, larger bodies, and bot management.
+
+### Rollback
+
+- **Bad hub deploy:** Vercel dashboard → Deployments → Promote previous. Instant. Same for siblings.
+- **Tool drains the API key:** Set `TOOL_<SLUG>_ENABLED=false` in Vercel env vars. The tile demotes to paused on the next request — under 60 s. No redeploy required.
