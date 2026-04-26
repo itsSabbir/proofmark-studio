@@ -38,7 +38,7 @@
     --planned: #8a8a94;
     --beta: #ffb366;
     --danger: #ff6b8a;
-    --art-opacity: 0.14;
+    --art-opacity: 0.10;
     --shadow-sm: 0 1px 2px rgba(0,0,0,.6);
     --shadow-md: 0 10px 30px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.3);
     --shadow-lg: 0 30px 80px rgba(0,0,0,.6), 0 8px 20px rgba(0,0,0,.4);
@@ -61,7 +61,7 @@
     --planned: #78766e;
     --beta: #b45309;
     --danger: #b91f45;
-    --art-opacity: 0.22;
+    --art-opacity: 0.16;
     --shadow-sm: 0 1px 2px rgba(24,24,27,.04);
     --shadow-md: 0 8px 24px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
     --shadow-lg: 0 24px 60px rgba(24,24,27,.10), 0 4px 12px rgba(24,24,27,.05);
@@ -69,12 +69,15 @@
 
   body { background: var(--bg); color: var(--text); }
 
-  /* StudioCanvas — contemporary-art background layer (replaces old grid) */
+  /* StudioCanvas — contemporary-art background layer (replaces old grid).
+     overflow:visible lets hero brush strokes drawn past the SVG viewBox
+     paint to the edges of the wrapper without getting clipped early. */
   .studio-canvas {
     position: fixed; inset: 0; pointer-events: none; z-index: 0;
     opacity: var(--art-opacity); transition: opacity .4s ease;
+    overflow: visible;
   }
-  .studio-canvas svg { width: 100%; height: 100%; display: block; }
+  .studio-canvas svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
   .app-noise { position: fixed; inset:0; pointer-events:none; z-index:1; opacity:.4; mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
