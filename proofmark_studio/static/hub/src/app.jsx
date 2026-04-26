@@ -10,6 +10,53 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
  * catalog renders. */
 const __pmVisible = (arr) => arr.filter(t => !t.hidden);
 
+/* ---------- Honest-fact helpers for the tool drawer + recent strip ---------- */
+const STATUS_LABEL = { live: 'Live', beta: 'Beta', planned: 'Planned' };
+const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// "2026-04-23" → "Apr 23"; today's year is omitted for compactness.
+const formatShortDate = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso + (iso.length === 10 ? 'T00:00:00' : ''));
+  if (isNaN(d)) return iso;
+  return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
+};
+
+// Coarse "x ago" — exact minutes for fresh, days/weeks otherwise. No false precision.
+const formatRelativeTime = (ts) => {
+  const diff = Math.max(0, Date.now() - ts);
+  const m = Math.floor(diff / 60000);
+  if (m < 1)   return 'just now';
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7)   return d === 1 ? 'yesterday' : `${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (w < 5)   return `${w}w ago`;
+  return formatShortDate(new Date(ts).toISOString().slice(0, 10));
+};
+
+/* ---------- "Your recent tools" — local-only, never sent anywhere ----------
+ * Honest replacement for the removed cross-user activity feed. The data is the
+ * user's own clicks, capped at RECENT_MAX, deduped by slug, MRU first. */
+const RECENT_KEY = 'pm:recent-tools';
+const RECENT_MAX = 8;
+
+const recordRecent = (slug) => {
+  try {
+    const prev = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+      .filter(e => e && e.slug && e.slug !== slug);
+    const next = [{ slug, at: Date.now() }, ...prev].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {} // private mode / quota — skip silently; the strip just won't update
+};
+
+const readRecent = () => {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+  catch { return []; }
+};
+
 /* ---------- Shortcuts cheat-sheet ----------
  * `?` opens this modal; it lists every keyboard binding the hub registers
  * so users don't have to guess. Kept alongside the palette because they
@@ -216,10 +263,10 @@ const ToolDrawer = ({ tool, onClose }) => {
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:22 }}>
             {[
-              { label:'Avg. run time',  value:'1.2s' },
-              { label:'Max file size',  value:'512 MB' },
-              { label:'Docs processed', value:'14.2k' },
-              { label:'Last updated',   value:'Apr 16' },
+              { label:'Status',        value: STATUS_LABEL[tool.status] || tool.status },
+              { label:'Max file size', value: `${tool.maxFileSizeMB ?? window.PM_HUB_MAX_FILE_SIZE_MB} MB` },
+              { label:'Output',        value: tool.output || '—' },
+              { label:'Last updated',  value: formatShortDate(tool.updatedAt || window.PM_HUB_DEFAULT_UPDATED_AT) },
             ].map(m => (
               <div key={m.label} style={{ padding:'12px 14px', borderRadius:10, background:'var(--bg-elev-2)', border:'1px solid var(--border)' }}>
                 <div style={{ fontSize:10.5, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.06em', fontFamily:'var(--font-mono)' }}>{m.label}</div>
@@ -240,7 +287,7 @@ const ToolDrawer = ({ tool, onClose }) => {
         </div>
         <div style={{ display:'flex', gap:10, padding:'14px 20px', borderTop:'1px solid var(--border)' }}>
           <button
-            onClick={() => { window.location.href = '/tool/' + tool.slug; }}
+            onClick={() => { recordRecent(tool.slug); window.location.href = '/tool/' + tool.slug; }}
             style={{ flex:1, padding:'11px 14px', borderRadius:10, background:tone, color:'#0a0a0b', border:0, fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
             <Glyph name="bolt" size={14}/>
             {tool.status === 'live' ? 'Open tool' : 'Open preview'}
@@ -521,6 +568,62 @@ const PlatformMap = () => {
   );
 };
 
+/* ---------- Your recent tools — local-only browsing history ----------
+ * Honest replacement for the removed cross-user activity feed. Reads from
+ * localStorage on mount + on focus (so it refreshes when the user comes back
+ * from a tool tab). Hidden entirely when empty — no fake placeholder rows. */
+const YourRecentTools = ({ onOpen }) => {
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    setItems(readRecent());
+    const refresh = () => setItems(readRecent());
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
+
+  const resolved = useMemo(() => items
+    .map(it => ({ ...it, tool: window.PM_TOOLS.find(t => t.slug === it.slug) }))
+    .filter(it => it.tool && !it.tool.hidden),
+  [items]);
+
+  if (!resolved.length) return null;
+
+  return (
+    <section>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, flexWrap:'wrap' }}>
+        <Glyph name="clock" size={15}/>
+        <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.1em', fontWeight:600 }}>Your recent tools</div>
+        <div style={{ fontSize:11, color:'var(--text-dim)', fontFamily:'var(--font-mono)' }}>· stored in your browser, never sent</div>
+        <div style={{ flex:1, minWidth:40, height:1, background:'var(--border)' }}/>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:10 }}>
+        {resolved.map(({ tool, at }) => {
+          const grp = window.PM_GROUPS.find(g => g.id === tool.group);
+          const tone = grp?.tone || '#7cb0ff';
+          return (
+            <button key={tool.slug} onClick={() => onOpen(tool)} style={{
+              display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10,
+              background:'var(--bg-elev)', border:'1px solid var(--border)', color:'var(--text)',
+              cursor:'pointer', textAlign:'left',
+            }}>
+              <div style={{ width:36, height:36, borderRadius:8, flexShrink:0,
+                background:`color-mix(in oklab, ${tone} 14%, transparent)`,
+                border:`1px solid color-mix(in oklab, ${tone} 30%, transparent)`,
+                display:'grid', placeItems:'center' }}>
+                <Illust name={tool.icon} tone={tone} size={22}/>
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tool.title}</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', marginTop:2 }}>{formatRelativeTime(at)}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
 /* ---------- Tweaks panel ---------- */
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "theme": "dark",
@@ -652,6 +755,7 @@ const App = () => {
               <PopularStrip onOpen={onRun}/>
               <GroupedCatalog onOpen={onRun} activeGroup={'all'} onSetGroup={()=>{}}/>
               <PlatformMap/>
+              <YourRecentTools onOpen={onRun}/>
             </div>
           )}
 
