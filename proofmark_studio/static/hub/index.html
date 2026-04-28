@@ -105,6 +105,11 @@
     0% { background-position: -400px 0; }
     100% { background-position: 400px 0; }
   }
+
+  @media (max-width: 767px) {
+    .pm-sidebar { transform: translateX(-100%); position: fixed; z-index: 50; transition: transform .2s ease; }
+    .pm-sidebar.open { transform: translateX(0); }
+  }
 </style>
 </head>
 <body data-theme="dark">
