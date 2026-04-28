@@ -126,7 +126,7 @@ const Kbd = ({ children }) => (
 );
 
 /* ---------- Sidebar ---------- */
-const Sidebar = ({ active, onSelect, onOpenPalette, density }) => {
+const Sidebar = ({ active, onSelect, onOpenPalette, density, isMobile, open, onClose, pinnedSlugs }) => {
   const items = [
     { id:'home',     label:'Home',      g:'home',   kbd:'H' },
     { id:'tools',    label:'All tools', g:'grid',   kbd:'G' },
@@ -137,137 +137,166 @@ const Sidebar = ({ active, onSelect, onOpenPalette, density }) => {
     { id:'settings', label:'Settings',  g:'settings' },
   ];
 
+  const pinnedTools = __pmVisible(window.PM_TOOLS).filter(t => pinnedSlugs.includes(t.slug));
+
+  const handleNav = (id) => {
+    onSelect(id);
+    if (isMobile) onClose();
+  };
+
   return (
-    <aside style={{
-      width: 232, flexShrink:0,
-      borderRight:'1px solid var(--border)',
-      background:'var(--bg)',
-      height:'100vh', position:'sticky', top:0,
-      display:'flex', flexDirection:'column',
-      padding:'14px 12px',
-    }}>
-      {/* Brand */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 8px 14px 8px', borderBottom:'1px solid var(--border)', marginBottom:10 }}>
-        <div style={{
-          width:30, height:30, borderRadius:8,
-          background:'var(--accent)', color:'var(--accent-ink)',
-          display:'grid', placeItems:'center',
-        }}>
-          <Glyph name="logo" size={18}/>
-        </div>
-        <div style={{ lineHeight:1.1 }}>
-          <div style={{ fontWeight:600, fontSize:13.5, letterSpacing:'-.01em' }}>ProofMark</div>
-          <div style={{ fontSize:10.5, color:'var(--text-muted)', fontFamily:'var(--font-mono)', letterSpacing:'.04em', textTransform:'uppercase' }}>Studio · v0.3</div>
-        </div>
-        <div style={{ marginLeft:'auto' }}>
-          <Kbd>⌘</Kbd>
-        </div>
-      </div>
-
-      {/* Search trigger */}
-      <button onClick={onOpenPalette} style={{
-        display:'flex', alignItems:'center', gap:10,
-        width:'100%', padding:'9px 10px', marginBottom:16,
-        background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:10,
-        color:'var(--text-muted)', cursor:'pointer',
-        fontSize:12.5, textAlign:'left', transition:'border-color .15s',
-      }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-      >
-        <Glyph name="search" size={14}/>
-        <span>Search tools…</span>
-        <span style={{ marginLeft:'auto', display:'flex', gap:3 }}>
-          <Kbd>⌘</Kbd><Kbd>K</Kbd>
-        </span>
-      </button>
-
-      {/* Nav */}
-      <nav style={{ display:'flex', flexDirection:'column', gap:1 }}>
-        <div style={{ fontSize:10, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--text-dim)', fontWeight:600, padding:'8px 10px 6px', fontFamily:'var(--font-mono)' }}>Workspace</div>
-        {items.map(it => (
-          <button key={it.id} onClick={() => onSelect(it.id)} style={{
-            display:'flex', alignItems:'center', gap:10,
-            width:'100%', padding:'8px 10px', borderRadius:8,
-            background: active === it.id ? 'var(--bg-elev)' : 'transparent',
-            border:'1px solid ' + (active === it.id ? 'var(--border)' : 'transparent'),
-            color: active === it.id ? 'var(--text)' : 'var(--text-muted)',
-            fontSize:13, fontWeight: active===it.id ? 500 : 400,
-            cursor:'pointer', textAlign:'left', transition:'background .12s, color .12s',
-          }}
-          onMouseEnter={e => { if(active!==it.id){ e.currentTarget.style.color='var(--text)'; }}}
-          onMouseLeave={e => { if(active!==it.id){ e.currentTarget.style.color='var(--text-muted)'; }}}
-          >
-            <Glyph name={it.g} size={15}/>
-            <span>{it.label}</span>
-            <span style={{ marginLeft:'auto' }}><Kbd>{it.kbd}</Kbd></span>
-          </button>
-        ))}
-      </nav>
-
-      <div style={{ marginTop:22 }}>
-        <div style={{ fontSize:10, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--text-dim)', fontWeight:600, padding:'8px 10px 6px', fontFamily:'var(--font-mono)' }}>Pinned tools</div>
-        {__pmVisible(window.PM_TOOLS).filter(t=>t.pin).map(t => (
-          <button key={t.slug} onClick={() => onSelect('tool:'+t.slug)} style={{
-            display:'flex', alignItems:'center', gap:10,
-            width:'100%', padding:'7px 10px', borderRadius:8,
-            background:'transparent', border:'1px solid transparent',
-            color:'var(--text-muted)', fontSize:12.5, cursor:'pointer', textAlign:'left',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background='var(--bg-elev)'; e.currentTarget.style.color='var(--text)';}}
-          onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-muted)';}}
-          >
-            <Glyph name={t.icon} size={14}/>
-            <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</span>
-            {t.status === 'live' && (
-              <span style={{ marginLeft:'auto', width:6, height:6, borderRadius:99, background:'var(--live)' }}/>
-            )}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ marginTop:'auto', paddingTop:12, borderTop:'1px solid var(--border)' }}>
-        {bottom.map(it => (
-          <button key={it.id} onClick={() => onSelect(it.id)} style={{
-            display:'flex', alignItems:'center', gap:10,
-            width:'100%', padding:'8px 10px', borderRadius:8,
-            background:'transparent', border:'1px solid transparent',
-            color:'var(--text-muted)', fontSize:13, cursor:'pointer', textAlign:'left',
-          }}>
-            <Glyph name={it.g} size={15}/> {it.label}
-          </button>
-        ))}
-        <div style={{
-          display:'flex', alignItems:'center', gap:10,
-          padding:'10px', marginTop:6, borderRadius:10,
-          background:'var(--bg-elev)', border:'1px solid var(--border)',
-        }}>
+    <React.Fragment>
+      {isMobile && open && (
+        <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:49, background:'rgba(0,0,0,.5)' }}/>
+      )}
+      <aside className={'pm-sidebar' + (open ? ' open' : '')} style={{
+        width: 232, flexShrink:0,
+        borderRight:'1px solid var(--border)',
+        background:'var(--bg)',
+        height:'100vh',
+        position: isMobile ? 'fixed' : 'sticky',
+        top:0, left:0, zIndex: isMobile ? 50 : 'auto',
+        display:'flex', flexDirection:'column',
+        padding:'14px 12px',
+        ...(isMobile ? {} : { transform:'none' }),
+      }}>
+        {/* Brand */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 8px 14px 8px', borderBottom:'1px solid var(--border)', marginBottom:10 }}>
           <div style={{
-            width:28, height:28, borderRadius:999,
-            background:'linear-gradient(135deg, var(--accent) 0%, #a57cff 100%)',
-            color:'#fff', display:'grid', placeItems:'center',
-            fontSize:11, fontWeight:600,
-          }}>SH</div>
-          <div style={{ lineHeight:1.2, fontSize:12 }}>
-            <div style={{ fontWeight:500 }}>Sabbir H.</div>
-            <div style={{ color:'var(--text-muted)', fontSize:10.5, fontFamily:'var(--font-mono)' }}>Workspace · Pro</div>
+            width:30, height:30, borderRadius:8,
+            background:'var(--accent)', color:'var(--accent-ink)',
+            display:'grid', placeItems:'center',
+          }}>
+            <Glyph name="logo" size={18}/>
+          </div>
+          <div style={{ lineHeight:1.1 }}>
+            <div style={{ fontWeight:600, fontSize:13.5, letterSpacing:'-.01em' }}>ProofMark</div>
+            <div style={{ fontSize:10.5, color:'var(--text-muted)', fontFamily:'var(--font-mono)', letterSpacing:'.04em', textTransform:'uppercase' }}>Studio · v0.3</div>
+          </div>
+          {isMobile
+            ? <button onClick={onClose} style={{ marginLeft:'auto', padding:6, borderRadius:7, background:'transparent', border:'1px solid var(--border)', color:'var(--text-muted)', cursor:'pointer', display:'grid', placeItems:'center' }}><Glyph name="x" size={14}/></button>
+            : <div style={{ marginLeft:'auto' }}><Kbd>⌘</Kbd></div>
+          }
+        </div>
+
+        {/* Search trigger */}
+        <button onClick={() => { onOpenPalette(); if (isMobile) onClose(); }} style={{
+          display:'flex', alignItems:'center', gap:10,
+          width:'100%', padding:'9px 10px', marginBottom:16,
+          background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:10,
+          color:'var(--text-muted)', cursor:'pointer',
+          fontSize:12.5, textAlign:'left', transition:'border-color .15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+        >
+          <Glyph name="search" size={14}/>
+          <span>Search tools…</span>
+          <span style={{ marginLeft:'auto', display:'flex', gap:3 }}>
+            <Kbd>⌘</Kbd><Kbd>K</Kbd>
+          </span>
+        </button>
+
+        {/* Nav */}
+        <nav style={{ display:'flex', flexDirection:'column', gap:1 }}>
+          <div style={{ fontSize:10, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--text-dim)', fontWeight:600, padding:'8px 10px 6px', fontFamily:'var(--font-mono)' }}>Workspace</div>
+          {items.map(it => (
+            <button key={it.id} onClick={() => handleNav(it.id)} style={{
+              display:'flex', alignItems:'center', gap:10,
+              width:'100%', padding:'8px 10px', borderRadius:8,
+              background: active === it.id ? 'var(--bg-elev)' : 'transparent',
+              border:'1px solid ' + (active === it.id ? 'var(--border)' : 'transparent'),
+              color: active === it.id ? 'var(--text)' : 'var(--text-muted)',
+              fontSize:13, fontWeight: active===it.id ? 500 : 400,
+              cursor:'pointer', textAlign:'left', transition:'background .12s, color .12s',
+            }}
+            onMouseEnter={e => { if(active!==it.id){ e.currentTarget.style.color='var(--text)'; }}}
+            onMouseLeave={e => { if(active!==it.id){ e.currentTarget.style.color='var(--text-muted)'; }}}
+            >
+              <Glyph name={it.g} size={15}/>
+              <span>{it.label}</span>
+              <span style={{ marginLeft:'auto' }}><Kbd>{it.kbd}</Kbd></span>
+            </button>
+          ))}
+        </nav>
+
+        <div style={{ marginTop:22 }}>
+          <div style={{ fontSize:10, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--text-dim)', fontWeight:600, padding:'8px 10px 6px', fontFamily:'var(--font-mono)' }}>Pinned tools</div>
+          {pinnedTools.length === 0 ? (
+            <div style={{ padding:'8px 10px', fontSize:11.5, color:'var(--text-dim)' }}>No pinned tools</div>
+          ) : pinnedTools.map(t => (
+            <button key={t.slug} onClick={() => handleNav('tool:'+t.slug)} style={{
+              display:'flex', alignItems:'center', gap:10,
+              width:'100%', padding:'7px 10px', borderRadius:8,
+              background:'transparent', border:'1px solid transparent',
+              color:'var(--text-muted)', fontSize:12.5, cursor:'pointer', textAlign:'left',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background='var(--bg-elev)'; e.currentTarget.style.color='var(--text)';}}
+            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-muted)';}}
+            >
+              <Glyph name={t.icon} size={14}/>
+              <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.title}>{t.title}</span>
+              {t.status === 'live' && (
+                <span style={{ marginLeft:'auto', width:6, height:6, borderRadius:99, background:'var(--live)' }}/>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginTop:'auto', paddingTop:12, borderTop:'1px solid var(--border)' }}>
+          {bottom.map(it => (
+            <button key={it.id} onClick={() => handleNav(it.id)} style={{
+              display:'flex', alignItems:'center', gap:10,
+              width:'100%', padding:'8px 10px', borderRadius:8,
+              background:'transparent', border:'1px solid transparent',
+              color:'var(--text-muted)', fontSize:13, cursor:'pointer', textAlign:'left',
+            }}>
+              <Glyph name={it.g} size={15}/> {it.label}
+            </button>
+          ))}
+          <div style={{
+            display:'flex', alignItems:'center', gap:10,
+            padding:'10px', marginTop:6, borderRadius:10,
+            background:'var(--bg-elev)', border:'1px solid var(--border)',
+          }}>
+            <div style={{
+              width:28, height:28, borderRadius:999,
+              background:'var(--accent)',
+              color:'var(--accent-ink)', display:'grid', placeItems:'center',
+            }}>
+              <Glyph name="logo" size={14}/>
+            </div>
+            <div style={{ lineHeight:1.2, fontSize:12 }}>
+              <div style={{ fontWeight:500 }}>My workspace</div>
+              <div style={{ color:'var(--text-muted)', fontSize:10.5, fontFamily:'var(--font-mono)' }}>Local · Free</div>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </React.Fragment>
   );
 };
 
 /* ---------- Topbar ---------- */
-const Topbar = ({ onOpenPalette, onOpenTweaks, breadcrumb }) => (
+const Topbar = ({ onOpenPalette, onOpenTweaks, breadcrumb, isMobile, onToggleSidebar }) => (
   <div style={{
-    display:'flex', alignItems:'center', gap:14,
-    padding:'14px 28px', borderBottom:'1px solid var(--border)',
+    display:'flex', alignItems:'center', gap: isMobile ? 10 : 14,
+    padding: isMobile ? '12px 16px' : '14px 28px',
+    borderBottom:'1px solid var(--border)',
     background:'color-mix(in oklab, var(--bg) 80%, transparent)',
     backdropFilter:'blur(14px)',
     position:'sticky', top:0, zIndex:20,
   }}>
-    <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:13, color:'var(--text-muted)' }}>
+    {isMobile && (
+      <button onClick={onToggleSidebar} style={{
+        padding:8, borderRadius:9,
+        background:'var(--bg-elev)', border:'1px solid var(--border)',
+        color:'var(--text-muted)', cursor:'pointer', display:'grid', placeItems:'center', flexShrink:0,
+      }}>
+        <Glyph name="list" size={16}/>
+      </button>
+    )}
+    <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:13, color:'var(--text-muted)', minWidth:0 }}>
       {breadcrumb.map((b,i) => (
         <React.Fragment key={i}>
           {i>0 && <span style={{ color:'var(--text-dim)' }}>/</span>}
@@ -275,16 +304,18 @@ const Topbar = ({ onOpenPalette, onOpenTweaks, breadcrumb }) => (
         </React.Fragment>
       ))}
     </div>
-    <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-      <div style={{
-        display:'flex', alignItems:'center', gap:8,
-        padding:'6px 10px', borderRadius:999,
-        background:'var(--bg-elev)', border:'1px solid var(--border)',
-        fontSize:11.5, color:'var(--text-muted)', fontFamily:'var(--font-mono)',
-      }}>
-        <span style={{ width:6, height:6, borderRadius:99, background:'var(--live)', animation:'pulseDot 2.2s infinite' }}/>
-        All systems operational
-      </div>
+    <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+      {!isMobile && (
+        <div style={{
+          display:'flex', alignItems:'center', gap:8,
+          padding:'6px 10px', borderRadius:999,
+          background:'var(--bg-elev)', border:'1px solid var(--border)',
+          fontSize:11.5, color:'var(--text-muted)', fontFamily:'var(--font-mono)',
+        }}>
+          <span style={{ width:6, height:6, borderRadius:99, background:'var(--live)', animation:'pulseDot 2.2s infinite' }}/>
+          All systems operational
+        </div>
+      )}
       <button onClick={onOpenPalette} style={{
         display:'flex', alignItems:'center', gap:8,
         padding:'7px 11px', borderRadius:10,
@@ -292,8 +323,8 @@ const Topbar = ({ onOpenPalette, onOpenTweaks, breadcrumb }) => (
         color:'var(--text-muted)', fontSize:12.5, cursor:'pointer',
       }}>
         <Glyph name="search" size={13}/>
-        <span>Jump to…</span>
-        <Kbd>⌘K</Kbd>
+        {!isMobile && <span>Jump to…</span>}
+        {!isMobile && <Kbd>⌘K</Kbd>}
       </button>
       <button onClick={onOpenTweaks} title="Appearance" style={{
         padding:'8px', borderRadius:9,

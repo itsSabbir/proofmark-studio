@@ -10,6 +10,17 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
  * catalog renders. */
 const __pmVisible = (arr) => arr.filter(t => !t.hidden);
 
+const useIsMobile = (breakpoint = 768) => {
+  const [mobile, setMobile] = useState(() => window.innerWidth < breakpoint);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e) => setMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [breakpoint]);
+  return mobile;
+};
+
 /* ---------- Honest-fact helpers for the tool drawer + recent strip ---------- */
 const STATUS_LABEL = { live: 'Live', beta: 'Beta', planned: 'Planned' };
 const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -55,6 +66,16 @@ const recordRecent = (slug) => {
 const readRecent = () => {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
   catch { return []; }
+};
+
+const PINNED_KEY = 'pm:pinned-slugs';
+const readPinned = () => {
+  try { return JSON.parse(localStorage.getItem(PINNED_KEY) || '[]'); }
+  catch { return []; }
+};
+const writePinned = (slugs) => {
+  try { localStorage.setItem(PINNED_KEY, JSON.stringify(slugs)); }
+  catch {}
 };
 
 /* ---------- Shortcuts cheat-sheet ----------
@@ -113,7 +134,7 @@ const ShortcutsModal = ({ open, onClose }) => {
 };
 
 /* ---------- Command Palette ---------- */
-const CommandPalette = ({ open, onClose, onRun }) => {
+const CommandPalette = ({ open, onClose, onRun, pinnedSlugs }) => {
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
   const inputRef = useRef(null);
@@ -128,7 +149,7 @@ const CommandPalette = ({ open, onClose, onRun }) => {
     if (!term) {
       return [
         { group:'Popular',   items: tools.filter(t => t.popular).slice(0,6) },
-        { group:'Pinned',    items: tools.filter(t => t.pin).slice(0,4) },
+        { group:'Pinned',    items: tools.filter(t => pinnedSlugs.includes(t.slug)).slice(0,4) },
       ];
     }
     const hits = tools.filter(t =>
@@ -221,7 +242,7 @@ const CommandPalette = ({ open, onClose, onRun }) => {
 };
 
 /* ---------- Tool drawer ---------- */
-const ToolDrawer = ({ tool, onClose }) => {
+const ToolDrawer = ({ tool, onClose, onTogglePin, isPinned }) => {
   if (!tool) return null;
   const grp = window.PM_GROUPS.find(g => g.id === tool.group);
   const tone = grp?.tone || '#7cb0ff';
@@ -292,8 +313,15 @@ const ToolDrawer = ({ tool, onClose }) => {
             <Glyph name="bolt" size={14}/>
             {tool.status === 'live' ? 'Open tool' : 'Open preview'}
           </button>
-          <button style={{ padding:'11px 14px', borderRadius:10, background:'var(--bg-elev-2)', color:'var(--text)', border:'1px solid var(--border)', fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
-            <Glyph name="star" size={14}/>Pin
+          <button onClick={() => onTogglePin(tool.slug)} style={{
+            padding:'11px 14px', borderRadius:10,
+            background: isPinned(tool.slug) ? tone : 'var(--bg-elev-2)',
+            color: isPinned(tool.slug) ? '#0a0a0b' : 'var(--text)',
+            border:'1px solid ' + (isPinned(tool.slug) ? tone : 'var(--border)'),
+            fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8,
+          }}>
+            <Glyph name={isPinned(tool.slug) ? 'check' : 'star'} size={14}/>
+            {isPinned(tool.slug) ? 'Pinned' : 'Pin'}
           </button>
         </div>
       </div>
@@ -302,10 +330,11 @@ const ToolDrawer = ({ tool, onClose }) => {
 };
 
 /* ---------- Big icon tile (SmallPDF-style) ---------- */
-const ToolTile = ({ tool, onOpen }) => {
+const ToolTile = ({ tool, onOpen, isPinned }) => {
   const grp = window.PM_GROUPS.find(g => g.id === tool.group);
   const tone = grp?.tone || '#7cb0ff';
   const [hover, setHover] = useState(false);
+  const pinned = isPinned && isPinned(tool.slug);
   return (
     <button onClick={() => onOpen(tool)}
       onMouseEnter={() => setHover(true)}
@@ -327,12 +356,21 @@ const ToolTile = ({ tool, onOpen }) => {
     >
       {tool.popular && (
         <span style={{
-          position:'absolute', top:10, right:10,
+          position:'absolute', top:10, right: pinned ? 72 : 10,
           fontSize:9.5, fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', fontFamily:'var(--font-mono)',
           padding:'3px 7px', borderRadius:999, color:tone,
           background:`color-mix(in oklab, ${tone} 14%, transparent)`,
           border:`1px solid color-mix(in oklab, ${tone} 30%, transparent)`,
         }}>Popular</span>
+      )}
+      {pinned && (
+        <span style={{
+          position:'absolute', top:10, right:10,
+          fontSize:9.5, fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', fontFamily:'var(--font-mono)',
+          padding:'3px 7px', borderRadius:999, color:'var(--accent)',
+          background:'var(--accent-glow)',
+          border:'1px solid color-mix(in oklab, var(--accent) 30%, transparent)',
+        }}>Pinned</span>
       )}
       <div style={{
         width:56, height:56, borderRadius:13,
@@ -384,7 +422,7 @@ const GroupHeader = ({ group, count, onViewAll }) => (
 );
 
 /* ---------- Hero: visual-first ---------- */
-const HeroPanel = ({ onOpenPalette }) => {
+const HeroPanel = ({ onOpenPalette, isMobile }) => {
   const visible = __pmVisible(window.PM_TOOLS);
   const liveCount = visible.filter(t=>t.status==='live').length;
 
@@ -399,36 +437,40 @@ const HeroPanel = ({ onOpenPalette }) => {
 
   return (
     <div style={{
-      padding:'32px 32px 28px',
+      padding: isMobile ? '24px 20px 20px' : '32px 32px 28px',
       borderRadius:20, border:'1px solid var(--border)',
       background:
         'radial-gradient(1000px 360px at 88% -40%, var(--accent-glow), transparent 60%),' +
         'linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-elev-2) 100%)',
-      position:'relative', overflow:'hidden', minHeight: 340,
+      position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 340,
     }}>
-      {/* Floating tiles cluster */}
-      <div style={{ position:'absolute', inset:0, pointerEvents:'none' }}>
-        {stack.map((s,i) => (
-          <div key={i} style={{
-            position:'absolute', left:`${s.x}%`, top:`${s.y}%`,
-            transform:`rotate(${s.r}deg)`,
-            width:78, height:78, borderRadius:16,
-            background:`color-mix(in oklab, ${s.tone} 12%, var(--bg-elev))`,
-            border:`1px solid color-mix(in oklab, ${s.tone} 34%, transparent)`,
-            display:'grid', placeItems:'center',
-            boxShadow: `0 14px 30px color-mix(in oklab, ${s.tone} 18%, transparent), var(--shadow-md)`,
-          }}>
-            <Illust name={s.ic} tone={s.tone} size={44}/>
-          </div>
-        ))}
-      </div>
+      {/* Floating tiles cluster — hidden on mobile */}
+      {!isMobile && (
+        <div style={{ position:'absolute', inset:0, pointerEvents:'none' }}>
+          {stack.map((s,i) => (
+            <div key={i} style={{
+              position:'absolute', left:`${s.x}%`, top:`${s.y}%`,
+              transform:`rotate(${s.r}deg)`,
+              width:78, height:78, borderRadius:16,
+              background:`color-mix(in oklab, ${s.tone} 12%, var(--bg-elev))`,
+              border:`1px solid color-mix(in oklab, ${s.tone} 34%, transparent)`,
+              display:'grid', placeItems:'center',
+              boxShadow: `0 14px 30px color-mix(in oklab, ${s.tone} 18%, transparent), var(--shadow-md)`,
+            }}>
+              <Illust name={s.ic} tone={s.tone} size={44}/>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div style={{ position:'absolute', top:20, right:24, display:'flex', alignItems:'center', gap:8, fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>
-        <span style={{ width:6, height:6, borderRadius:99, background:'var(--live)', animation:'pulseDot 2.2s infinite' }}/>
-        Workspace · online
-      </div>
+      {!isMobile && (
+        <div style={{ position:'absolute', top:20, right:24, display:'flex', alignItems:'center', gap:8, fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>
+          <span style={{ width:6, height:6, borderRadius:99, background:'var(--live)', animation:'pulseDot 2.2s infinite' }}/>
+          Workspace · online
+        </div>
+      )}
 
-      <div style={{ position:'relative', zIndex:2, maxWidth:'56%' }}>
+      <div style={{ position:'relative', zIndex:2, maxWidth: isMobile ? '100%' : '56%' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.1em', fontWeight:600 }}>
           <Glyph name="dot" size={8}/> ProofMark Studio · Working hub
         </div>
@@ -460,7 +502,7 @@ const HeroPanel = ({ onOpenPalette }) => {
 };
 
 /* ---------- Popular strip ---------- */
-const PopularStrip = ({ onOpen }) => {
+const PopularStrip = ({ onOpen, isMobile, isPinned }) => {
   const pops = __pmVisible(window.PM_TOOLS).filter(t => t.popular);
   return (
     <div>
@@ -469,15 +511,15 @@ const PopularStrip = ({ onOpen }) => {
         <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.1em', fontWeight:600 }}>Popular right now</div>
         <div style={{ flex:1, height:1, background:'var(--border)' }}/>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:`repeat(${Math.min(pops.length, 8)}, 1fr)`, gap:12 }}>
-        {pops.map(t => <ToolTile key={t.slug} tool={t} onOpen={onOpen}/>)}
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(160px, 1fr))' : `repeat(${Math.min(pops.length, 8)}, 1fr)`, gap:12 }}>
+        {pops.map(t => <ToolTile key={t.slug} tool={t} onOpen={onOpen} isPinned={isPinned}/>)}
       </div>
     </div>
   );
 };
 
 /* ---------- Grouped catalog ---------- */
-const GroupedCatalog = ({ onOpen, activeGroup, onSetGroup }) => {
+const GroupedCatalog = ({ onOpen, activeGroup, onSetGroup, isMobile, isPinned }) => {
   const groups = activeGroup === 'all' ? window.PM_GROUPS : window.PM_GROUPS.filter(g => g.id === activeGroup);
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:40 }}>
@@ -487,8 +529,8 @@ const GroupedCatalog = ({ onOpen, activeGroup, onSetGroup }) => {
         return (
           <section key={g.id} id={`g-${g.id}`}>
             <GroupHeader group={g} count={items.length}/>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:12 }}>
-              {items.map(t => <ToolTile key={t.slug} tool={t} onOpen={onOpen}/>)}
+            <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill, minmax(${isMobile ? '155px' : '210px'}, 1fr))`, gap:12 }}>
+              {items.map(t => <ToolTile key={t.slug} tool={t} onOpen={onOpen} isPinned={isPinned}/>)}
             </div>
           </section>
         );
@@ -498,9 +540,13 @@ const GroupedCatalog = ({ onOpen, activeGroup, onSetGroup }) => {
 };
 
 /* ---------- Group chips with colored dots ---------- */
-const GroupChips = ({ active, onSelect }) => (
+const GroupChips = ({ active, onSelect, isMobile }) => (
   <div style={{
-    display:'flex', gap:8, flexWrap:'wrap', padding:'12px 0 20px',
+    display:'flex', gap:8,
+    flexWrap: isMobile ? 'nowrap' : 'wrap',
+    overflowX: isMobile ? 'auto' : 'visible',
+    WebkitOverflowScrolling: 'touch',
+    padding:'12px 0 20px',
     borderBottom:'1px solid var(--border)', marginBottom:30,
     position:'sticky', top:54, zIndex:10,
     background:'color-mix(in oklab, var(--bg) 94%, transparent)',
@@ -572,7 +618,7 @@ const PlatformMap = () => {
  * Honest replacement for the removed cross-user activity feed. Reads from
  * localStorage on mount + on focus (so it refreshes when the user comes back
  * from a tool tab). Hidden entirely when empty — no fake placeholder rows. */
-const YourRecentTools = ({ onOpen }) => {
+const YourRecentTools = ({ onOpen, isMobile }) => {
   const [items, setItems] = useState([]);
   useEffect(() => {
     setItems(readRecent());
@@ -596,7 +642,7 @@ const YourRecentTools = ({ onOpen }) => {
         <div style={{ fontSize:11, color:'var(--text-dim)', fontFamily:'var(--font-mono)' }}>· stored in your browser, never sent</div>
         <div style={{ flex:1, minWidth:40, height:1, background:'var(--border)' }}/>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:10 }}>
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill, minmax(${isMobile ? '155px' : '180px'}, 1fr))`, gap:10 }}>
         {resolved.map(({ tool, at }) => {
           const grp = window.PM_GROUPS.find(g => g.id === tool.group);
           const tone = grp?.tone || '#7cb0ff';
@@ -631,7 +677,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "#7cb0ff"
 }/*EDITMODE-END*/;
 
-const TweaksPanel = ({ open, values, onChange, onClose }) => {
+const TweaksPanel = ({ open, values, onChange, onClose, isMobile }) => {
   if (!open) return null;
   const opt = (current, choices, onPick, label) => (
     <div style={{ marginBottom:18 }}>
@@ -651,7 +697,7 @@ const TweaksPanel = ({ open, values, onChange, onClose }) => {
   );
   const accents = ['#7cb0ff','#5ee59b','#ffb366','#ff6b8a','#a57cff','#1e4fd6'];
   return (
-    <div style={{ position:'fixed', right:20, bottom:20, zIndex:80, width:280, padding:18, borderRadius:14, background:'var(--bg-elev)', border:'1px solid var(--border-strong)', boxShadow:'var(--shadow-lg)' }}>
+    <div style={{ position:'fixed', right: isMobile ? 8 : 20, bottom: isMobile ? 8 : 20, zIndex:80, width: isMobile ? 'calc(100% - 16px)' : 280, padding:18, borderRadius:14, background:'var(--bg-elev)', border:'1px solid var(--border-strong)', boxShadow:'var(--shadow-lg)' }}>
       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
         <div style={{ fontSize:13, fontWeight:600 }}>Tweaks</div>
         <span style={{ fontSize:10.5, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em' }}>Live</span>
@@ -675,16 +721,34 @@ const TweaksPanel = ({ open, values, onChange, onClose }) => {
 
 /* ---------- Main App ---------- */
 const App = () => {
+  const isMobile = useIsMobile();
   const [view, setView] = useState('home');
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [tweaksOpen, setTweaksOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState(null);
   const [group, setGroup] = useState('all');
   const [tweaks, setTweaks] = useState(() => {
     try { return { ...TWEAK_DEFAULTS, ...JSON.parse(localStorage.getItem('pm_tweaks')||'{}') }; }
     catch { return TWEAK_DEFAULTS; }
   });
+
+  const [pinnedSlugs, setPinnedSlugs] = useState(() => {
+    const stored = readPinned();
+    if (stored.length > 0) return stored;
+    const defaults = window.PM_TOOLS.filter(t => t.pin).map(t => t.slug);
+    writePinned(defaults);
+    return defaults;
+  });
+  const togglePin = useCallback((slug) => {
+    setPinnedSlugs(prev => {
+      const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug];
+      writePinned(next);
+      return next;
+    });
+  }, []);
+  const isPinned = useCallback((slug) => pinnedSlugs.includes(slug), [pinnedSlugs]);
 
   useEffect(() => {
     document.body.dataset.theme = tweaks.theme;
@@ -735,6 +799,8 @@ const App = () => {
     return ['Workspace'];
   })();
 
+  const pinnedTools = __pmVisible(window.PM_TOOLS).filter(t => pinnedSlugs.includes(t.slug));
+
   return (
     <div style={{ display:'flex', minHeight:'100vh' }}>
       <Sidebar active={view} onSelect={(v) => {
@@ -743,19 +809,21 @@ const App = () => {
           const tool = window.PM_TOOLS.find(t => t.slug === slug);
           if (tool) setSelectedTool(tool);
         } else setView(v);
-      }} onOpenPalette={() => setPaletteOpen(true)} density={tweaks.density}/>
+      }} onOpenPalette={() => setPaletteOpen(true)} density={tweaks.density}
+        isMobile={isMobile} open={sidebarOpen} onClose={() => setSidebarOpen(false)} pinnedSlugs={pinnedSlugs}/>
 
       <main style={{ flex:1, minWidth:0 }}>
-        <Topbar onOpenPalette={() => setPaletteOpen(true)} onOpenTweaks={() => setTweaksOpen(true)} breadcrumb={breadcrumb}/>
+        <Topbar onOpenPalette={() => setPaletteOpen(true)} onOpenTweaks={() => setTweaksOpen(true)} breadcrumb={breadcrumb}
+          isMobile={isMobile} onToggleSidebar={() => setSidebarOpen(v => !v)}/>
 
-        <div style={{ padding:'28px clamp(20px, 3vw, 36px) 60px', maxWidth:1440, margin:'0 auto' }}>
+        <div style={{ padding: isMobile ? '20px 16px 40px' : '28px clamp(20px, 3vw, 36px) 60px', maxWidth:1440, margin:'0 auto' }}>
           {view === 'home' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:36 }}>
-              <HeroPanel onOpenPalette={() => setPaletteOpen(true)}/>
-              <PopularStrip onOpen={onRun}/>
-              <GroupedCatalog onOpen={onRun} activeGroup={'all'} onSetGroup={()=>{}}/>
+            <div style={{ display:'flex', flexDirection:'column', gap: isMobile ? 28 : 36 }}>
+              <HeroPanel onOpenPalette={() => setPaletteOpen(true)} isMobile={isMobile}/>
+              <PopularStrip onOpen={onRun} isMobile={isMobile} isPinned={isPinned}/>
+              <GroupedCatalog onOpen={onRun} activeGroup={'all'} onSetGroup={()=>{}} isMobile={isMobile} isPinned={isPinned}/>
               <PlatformMap/>
-              <YourRecentTools onOpen={onRun}/>
+              <YourRecentTools onOpen={onRun} isMobile={isMobile}/>
             </div>
           )}
 
@@ -763,33 +831,41 @@ const App = () => {
             <div>
               <div style={{ marginBottom:10 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)', textTransform:'uppercase', letterSpacing:'.08em', fontWeight:600 }}>Catalog</div>
-                <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, lineHeight:1, letterSpacing:'-.02em', margin:'10px 0 6px' }}>
+                <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize: isMobile ? 32 : 44, lineHeight:1, letterSpacing:'-.02em', margin:'10px 0 6px' }}>
                   All tools <span style={{ color:'var(--text-dim)' }}>· {__pmVisible(window.PM_TOOLS).length}</span>
                 </h2>
                 <p style={{ fontSize:13.5, color:'var(--text-muted)', margin:'0 0 6px' }}>Click a category to filter, or scroll through grouped sections below.</p>
               </div>
-              <GroupChips active={group} onSelect={setGroup}/>
-              <GroupedCatalog onOpen={onRun} activeGroup={group} onSetGroup={setGroup}/>
+              <GroupChips active={group} onSelect={setGroup} isMobile={isMobile}/>
+              <GroupedCatalog onOpen={onRun} activeGroup={group} onSetGroup={setGroup} isMobile={isMobile} isPinned={isPinned}/>
             </div>
           )}
 
           {view === 'pinned' && (
             <div>
-              <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Pinned tools</h2>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:12 }}>
-                {__pmVisible(window.PM_TOOLS).filter(t=>t.pin).map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun}/>)}
-              </div>
+              <h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize: isMobile ? 32 : 44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Pinned tools</h2>
+              {pinnedTools.length === 0 ? (
+                <div style={{ padding:'40px 20px', textAlign:'center', borderRadius:16, border:'1px dashed var(--border)', color:'var(--text-muted)' }}>
+                  <Glyph name="pin" size={24}/>
+                  <div style={{ fontSize:14, marginTop:12 }}>No pinned tools yet</div>
+                  <div style={{ fontSize:12, color:'var(--text-dim)', marginTop:6 }}>Open any tool and click Pin to add it here.</div>
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill, minmax(${isMobile ? '155px' : '210px'}, 1fr))`, gap:12 }}>
+                  {pinnedTools.map(t => <ToolTile key={t.slug} tool={t} onOpen={onRun} isPinned={isPinned}/>)}
+                </div>
+              )}
             </div>
           )}
-          {view === 'map' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Platform</h2><PlatformMap/></div>)}
-          {view === 'settings' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize:44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Settings</h2><div style={{ padding:22, borderRadius:14, background:'var(--bg-elev)', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:13.5 }}>Use the Tweaks panel (bottom-right) to adjust theme, density, and accent.</div></div>)}
+          {view === 'map' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize: isMobile ? 32 : 44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Platform</h2><PlatformMap/></div>)}
+          {view === 'settings' && (<div><h2 style={{ fontFamily:'var(--font-serif)', fontWeight:400, fontSize: isMobile ? 32 : 44, letterSpacing:'-.02em', margin:'0 0 22px' }}>Settings</h2><div style={{ padding:22, borderRadius:14, background:'var(--bg-elev)', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:13.5 }}>Use the Tweaks panel (bottom-right) to adjust theme, density, and accent.</div></div>)}
         </div>
       </main>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onRun={onRun}/>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onRun={onRun} pinnedSlugs={pinnedSlugs}/>
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)}/>
-      <ToolDrawer tool={selectedTool} onClose={() => setSelectedTool(null)}/>
-      <TweaksPanel open={tweaksOpen} values={tweaks} onChange={updateTweak} onClose={() => setTweaksOpen(false)}/>
+      <ToolDrawer tool={selectedTool} onClose={() => setSelectedTool(null)} onTogglePin={togglePin} isPinned={isPinned}/>
+      <TweaksPanel open={tweaksOpen} values={tweaks} onChange={updateTweak} onClose={() => setTweaksOpen(false)} isMobile={isMobile}/>
     </div>
   );
 };
