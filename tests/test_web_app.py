@@ -1,7 +1,9 @@
 """Hub tests. Studio serves a React SPA shell; most UI assertions moved to
 Phase 3 (tool-stub routing) and Phase 7 (E2E click-through)."""
+import pytest
 from fastapi.testclient import TestClient
 
+from proofmark_studio.tool_registry import PDF_BASE, TEXT_BASE, TOOLS
 from web_app import APP_NAME, app
 
 
@@ -486,3 +488,45 @@ def test_api_tools_returns_full_registry():
     counts = payload["counts"]
     assert counts["total"] >= 40
     assert counts["live"] >= 25
+
+
+# ─── Parametric redirect validation (Task 1 RCA) ──────────────────────
+
+
+_LIVE_SLUGS = [slug for slug, entry in TOOLS.items() if entry["status"] == "live"]
+
+# text-inspection intentionally redirects to the text-cleaner root —
+# Vercel has a dedicated exact /text → proofmark.sabbir.ca rewrite.
+_BARE_PARENT_OK = {"text-inspection"}
+
+
+@pytest.mark.parametrize("slug", _LIVE_SLUGS)
+def test_all_live_tools_redirect_with_valid_url(slug: str) -> None:
+    """Every live tool must 307-redirect to a non-empty URL that isn't just
+    the bare parent base (which would miss the Vercel rewrite in prod)."""
+    r = client.get(f"/tool/{slug}", follow_redirects=False)
+    assert r.status_code in {302, 307}, f"{slug}: expected redirect, got {r.status_code}"
+    loc = r.headers.get("location", "")
+    assert loc, f"{slug}: redirect has empty Location header"
+    if slug not in _BARE_PARENT_OK:
+        # Bare parent URLs fall through Vercel's /pdf/:path* rewrite.
+        bare_parents = {PDF_BASE, TEXT_BASE, "/pdf", "/text"}
+        assert loc not in bare_parents, (
+            f"{slug}: redirects to bare parent '{loc}' — needs a path or query"
+        )
+
+
+def test_no_live_tool_url_is_bare_parent() -> None:
+    """Registry-level guard: every live tool's computed URL must include a
+    distinguishing path or query string beyond the parent base."""
+    bare = {PDF_BASE, TEXT_BASE, "/pdf", "/text"}
+    violations = [
+        slug
+        for slug, entry in TOOLS.items()
+        if entry["status"] == "live"
+        and slug not in _BARE_PARENT_OK
+        and entry.get("url") in bare
+    ]
+    assert not violations, (
+        f"Live tools with bare-parent URLs (broken in prod): {violations}"
+    )
