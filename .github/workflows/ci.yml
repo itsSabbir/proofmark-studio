@@ -12,7 +12,10 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.env.example'
+      - '.vercelignore'
       - 'vercel.json'
+      - 'docs/about.md'
+      - 'docs/changelog.md'
       - '.github/workflows/ci.yml'
   pull_request:
     paths:
@@ -24,7 +27,10 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.env.example'
+      - '.vercelignore'
       - 'vercel.json'
+      - 'docs/about.md'
+      - 'docs/changelog.md'
       - '.github/workflows/ci.yml'
 
 permissions:

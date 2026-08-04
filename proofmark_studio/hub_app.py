@@ -42,8 +42,8 @@ APP_KICKER = "Working hub"
 CREATOR_NAME = "Sabbir Hossain"
 CREATOR_SITE = os.environ.get("CREATOR_SITE", "https://sabbir.ca/")
 
-# Sibling tool base URLs — overridable via env for prod (Vercel rewrites make these ""
-# so paths become same-origin relative like /pdf/merge-pdf).
+# Sibling tool base URLs — overridable via env for prod. Empty Vercel values use
+# the same-origin /pdf and /text rewrites in the redirect handlers below.
 PROOFMARK_PDF_BASE = os.environ.get("PROOFMARK_PDF_BASE", "http://127.0.0.1:8010")
 PROOFMARK_TEXT_BASE = os.environ.get("PROOFMARK_TEXT_BASE", "http://127.0.0.1:8000")
 PROOFMARK_SITE_URL = os.environ.get("PROOFMARK_SITE_URL", CREATOR_SITE)
@@ -102,12 +102,12 @@ def hub_index() -> FileResponse:
 
 @app.get("/go/proofmark-pdf", include_in_schema=False)
 def go_pdf() -> RedirectResponse:
-    return RedirectResponse(url=PROOFMARK_PDF_BASE, status_code=307)
+    return RedirectResponse(url=PROOFMARK_PDF_BASE or "/pdf", status_code=307)
 
 
 @app.get("/go/text-inspection", include_in_schema=False)
 def go_text() -> RedirectResponse:
-    return RedirectResponse(url=PROOFMARK_TEXT_BASE, status_code=307)
+    return RedirectResponse(url=PROOFMARK_TEXT_BASE or "/text", status_code=307)
 
 
 @app.get("/go/proofmark-site", include_in_schema=False)
