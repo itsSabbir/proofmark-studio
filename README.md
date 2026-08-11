@@ -3,7 +3,7 @@
 The working hub for the ProofMark product line — one keyboard-first catalog of document-craft tools, rendered as a React SPA on top of a thin FastAPI shell.
 
 > **Catalog:** 49 tools registered · **27 live** end-to-end · 14 beta · 8 planned.
-> **Live URL:** _coming on `proofmarkstudio.com` (Phase 19)_ — currently at the [Vercel preview](https://proofmark-studio-ij7v4i8xk-sabbirs-projects-eab46ba9.vercel.app/).
+> **Live URL:** [proofmarkstudio.com](https://proofmarkstudio.com/).
 
 ![Hub home — hero, popular strip, Organize group](docs/screenshots/hub-home.png)
 
@@ -40,7 +40,7 @@ Document workflows fragment across a dozen single-purpose websites — merge her
 |---|---|
 | ![](docs/screenshots/tool-merge-pdf.png) | ![](docs/screenshots/tool-pdf-to-text.png) |
 
-| Text Inspection (`text-cleaner` :8000) |
+| Text Inspection (`text-remover` :8000) |
 |---|
 | ![](docs/screenshots/tool-text-inspection.png) |
 
@@ -89,7 +89,7 @@ python web_app.py
 
 # Sibling apps standalone (from their own folders)
 cd ..\proofmark-pdf  && python web_app.py    # :8010
-cd ..\text-cleaner   && python web_app.py    # :8000
+cd ..\text-remover   && python web_app.py    # :8000
 ```
 
 **Roadmap mode** — show every registered tile, including beta and planned:
@@ -114,7 +114,7 @@ Three sibling FastAPI apps; one domain from the user's perspective. The hub talk
          │  "← ProofMark Studio"   │
          │                         ▼
 ┌────────────────────────┐  ┌────────────────────────┐
-│ proofmark-pdf (:8010)  │  │ text-cleaner  (:8000)  │
+│ proofmark-pdf (:8010)  │  │ text-remover  (:8000)  │
 │ merge, split, OCR …    │  │ hidden chars, typog    │
 └────────────────────────┘  └────────────────────────┘
 ```
@@ -123,7 +123,7 @@ Three sibling FastAPI apps; one domain from the user's perspective. The hub talk
 |------------------|------|---------------------------|------------------------|
 | Hub              | 8020 | `proofmark-studio/`       | `python web_app.py`    |
 | ProofMark PDF    | 8010 | `../proofmark-pdf/`       | `python web_app.py`    |
-| Text Inspection  | 8000 | `../text-cleaner/`        | `python web_app.py`    |
+| Text Inspection  | 8000 | `../text-remover/`        | `python web_app.py`    |
 
 Sibling apps receive `PROOFMARK_HUB_URL=http://127.0.0.1:8020` from the launcher; this toggles the "← ProofMark Studio" back-link in their topbar. Unset → no link (clean standalone mode).
 
@@ -204,17 +204,17 @@ Press **`?`** anywhere to open the cheat-sheet (illustrated above). Quick refere
 ## Testing
 
 ```powershell
-.\.venv\Scripts\python -m pytest         # hub tests (54 tests)
+.\.venv\Scripts\python -m pytest         # hub tests (68 tests)
 ```
 
 Sibling test suites run from their own folders:
 
 ```powershell
 cd ..\proofmark-pdf && .\.venv\Scripts\python -m pytest   # ~87 tests
-cd ..\text-cleaner  && .\.venv\Scripts\python -m pytest   # ~69 tests
+cd ..\text-remover  && .\.venv\Scripts\python -m pytest   # ~69 tests
 ```
 
-**Total: ~210 tests** across the three apps.
+**Total: ~224 tests** across the three apps.
 
 Re-capturing the README screenshots after a UI change:
 
@@ -229,7 +229,7 @@ Re-capturing the README screenshots after a UI change:
 
 - Hub deploys to Vercel (`proofmark-studio` project). Sibling apps deploy to their own Vercel projects.
 - Hub's `vercel.json` rewrites `/pdf/*` and `/text/*` to the sibling Vercel projects via edge proxy. Users see only the hub origin in their URL bar — SmallPDF-style seamless UX.
-- Custom domain (`proofmarkstudio.com`) cuts over in Phase 19.
+- The custom domain `proofmarkstudio.com` is live on the production deployment.
 
 ---
 
