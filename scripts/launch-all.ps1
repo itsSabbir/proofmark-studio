@@ -43,8 +43,8 @@ $APPS = @(
   },
   @{
     name   = 'text'
-    dir    = Join-Path $ToolsRoot 'text-cleaner'
-    venv   = Join-Path $ToolsRoot 'text-cleaner\.venv\Scripts\python.exe'
+    dir    = Join-Path $ToolsRoot 'text-remover'
+    venv   = Join-Path $ToolsRoot 'text-remover\.venv\Scripts\python.exe'
     script = 'web_app.py'
     port   = 8000
     health = '/api/health'
@@ -154,7 +154,7 @@ Write-Host ""
 Write-Host "ProofMark Studio — starting hub + siblings" -ForegroundColor Cyan
 Write-Host "  hub  :8020   (proofmark-studio)"
 Write-Host "  pdf  :8010   (proofmark-pdf)"
-Write-Host "  text :8000   (text-cleaner)"
+Write-Host "  text :8000   (text-remover)"
 Write-Host ""
 
 $procs = @{}

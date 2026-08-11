@@ -29,12 +29,12 @@ This architecture also maps cleanly to the Phase 9 production plan (Vercel rewri
 ## Request flow: planned / beta tool
 
 ```
-1. User clicks "Sign PDF" tile → drawer → "Open preview"
-2. window.location = /tool/sign-pdf
+1. In roadmap mode, user clicks "PDF → Word" tile → drawer → "Open preview"
+2. window.location = /tool/pdf-to-word
 3. Hub's route: entry.status == 'planned' → render stub HTML
 4. Stub page shows:
-     - Breadcrumb: ProofMark Studio / Sign & Secure / Planned
-     - Title: "Sign PDF" (Instrument Serif)
+     - Breadcrumb: ProofMark Studio / Convert from PDF / Planned
+     - Title: "PDF to Word" (Instrument Serif)
      - Description from registry
      - Buttons: [Return to the hub] [Open ProofMark PDF]
 ```
@@ -45,7 +45,7 @@ This architecture also maps cleanly to the Phase 9 production plan (Vercel rewri
 - **Tool registry** (`proofmark_studio/tool_registry.py`) — one dict per slug with `{title, desc, group, status, parent, url}`. URL is `None` for non-live tools. Bases come from env vars so local → Vercel migration is a config flip, not a code change.
 - **React SPA** (`static/hub/src/*.jsx`) — hand-authored JSX served to the browser, transpiled client-side by Babel standalone. No build step required. On mount, fetches `/api/tools` and merges backend status/url into its catalog so display can't drift.
 - **StudioCanvas** (`studio-canvas.jsx`) — replaces the old grid pattern with a deterministic layout of squiggles, outlined circles, triangles, asterisks, crescents, dot clusters, and wave bars in red/yellow/blue. Positions corner-clustered to avoid competing with body text. See [art-background.md](art-background.md).
-- **Sub-apps** (`../proofmark-pdf/`, `../text-cleaner/`) — untouched except for: (a) port default (PDF 8010), (b) `HUB_URL` env var toggle for back-link. Tests still pass from either invocation location.
+- **Sub-apps** (`../proofmark-pdf/`, `../text-remover/`) — untouched except for: (a) port default (PDF 8010), (b) `HUB_URL` env var toggle for back-link. Tests still pass from either invocation location.
 
 ## Why React UMD + Babel standalone (no build step)
 
