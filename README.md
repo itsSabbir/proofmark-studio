@@ -2,7 +2,7 @@
 
 The working hub for the ProofMark product line — one keyboard-first catalog of document-craft tools, rendered as a React SPA on top of a thin FastAPI shell.
 
-> **Catalog:** 49 tools registered · **27 live** end-to-end · 14 beta · 8 planned.
+> **Catalog:** 49 tools registered · **26 live** end-to-end · 15 beta · 8 planned.
 > **Live URL:** [proofmarkstudio.com](https://proofmarkstudio.com/).
 
 ![Hub home — hero, popular strip, Organize group](docs/screenshots/hub-home.png)
