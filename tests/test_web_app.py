@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from proofmark_studio import hub_app as hub_module
+from proofmark_studio.tool_registry import PDF_BASE, TEXT_BASE, TOOLS
 from web_app import APP_NAME, app
 
 
@@ -118,7 +119,7 @@ def test_sitemap_enumerates_live_tools():
     r = client.get("/sitemap.xml")
     assert r.status_code == 200
     live_slugs = [s for s, t in reg.TOOLS.items() if t["status"] == "live"]
-    assert len(live_slugs) >= 25  # guardrail: 27 live after Vercel-compat demotions
+    assert len(live_slugs) >= 26  # guardrail: 26 live after extract-pdf-pages demotion
     for slug in live_slugs:
         assert f"/tool/{slug}" in r.text, f"sitemap missing /tool/{slug}"
 
@@ -509,7 +510,62 @@ def test_api_tools_returns_full_registry():
     # Workflow tiles stay planned until Phase 17 infra (DB+auth) lands.
     assert "project-intake" in tools
     assert tools["project-intake"]["status"] == "planned"
-    # Counts sanity — 27 live after Vercel-compat demotions (AI + xhtml2pdf + OCR)
+    # Counts sanity — 26 live after extract-pdf-pages demotion (no sibling route)
     counts = payload["counts"]
     assert counts["total"] >= 40
-    assert counts["live"] >= 25
+    assert counts["live"] >= 26
+
+
+# ─── Parametric redirect validation (Task 1 RCA) ──────────────────────
+
+
+_LIVE_SLUGS = [slug for slug, entry in TOOLS.items() if entry["status"] == "live"]
+
+# text-inspection intentionally redirects to the text-cleaner root —
+# Vercel has a dedicated exact /text → proofmark.sabbir.ca rewrite.
+_BARE_PARENT_OK = {"text-inspection"}
+
+
+@pytest.mark.parametrize("slug", _LIVE_SLUGS)
+def test_all_live_tools_redirect_with_valid_url(slug: str) -> None:
+    """Every live tool must 307-redirect to a non-empty URL that isn't just
+    the bare parent base (which would miss the Vercel rewrite in prod)."""
+    r = client.get(f"/tool/{slug}", follow_redirects=False)
+    assert r.status_code == 307, f"{slug}: expected 307, got {r.status_code}"
+    loc = r.headers.get("location", "")
+    assert loc, f"{slug}: redirect has empty Location header"
+    if slug not in _BARE_PARENT_OK:
+        # Bare parent URLs fall through Vercel's /pdf/:path* rewrite.
+        # Strip trailing slash so http://127.0.0.1:8010/ is caught too.
+        normalized = loc.rstrip("/")
+        bare_parents = {PDF_BASE.rstrip("/"), TEXT_BASE.rstrip("/"),
+                        "/pdf", "/text"}
+        assert normalized not in bare_parents, (
+            f"{slug}: redirects to bare parent '{loc}' — needs a path or query"
+        )
+
+
+def test_no_live_tool_url_is_bare_parent() -> None:
+    """Registry-level guard: every live tool's computed URL must include a
+    distinguishing path or query string beyond the parent base."""
+    bare = {PDF_BASE.rstrip("/"), TEXT_BASE.rstrip("/"), "/pdf", "/text"}
+    violations = [
+        slug
+        for slug, entry in TOOLS.items()
+        if entry["status"] == "live"
+        and slug not in _BARE_PARENT_OK
+        and (entry.get("url") or "").rstrip("/") in bare
+    ]
+    assert not violations, (
+        f"Live tools with bare-parent URLs (broken in prod): {violations}"
+    )
+
+
+def test_bare_parent_ok_members_exist_in_tools() -> None:
+    """Guard: every slug in _BARE_PARENT_OK must exist in TOOLS and be live,
+    so the exception set doesn't silently exempt a stale or mistyped slug."""
+    for slug in _BARE_PARENT_OK:
+        assert slug in TOOLS, f"_BARE_PARENT_OK contains unknown slug '{slug}'"
+        assert TOOLS[slug]["status"] == "live", (
+            f"_BARE_PARENT_OK slug '{slug}' is not live — remove from exception set"
+        )

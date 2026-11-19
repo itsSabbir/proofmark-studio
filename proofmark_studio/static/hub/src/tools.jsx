@@ -34,7 +34,7 @@ const TOOLS = [
   // ORGANIZE
   { slug:'merge-pdf',         title:'Merge PDF',       group:'organize',     cat:'organize', status:'live',    pin:true,  icon:'merge',    output:'PDF',    desc:'Combine multiple PDFs into a single document.', popular:true },
   { slug:'split-pdf',         title:'Split PDF',       group:'organize',     cat:'organize', status:'live',    pin:true,  icon:'split',    output:'PDF',    desc:'Split by range, fixed chunks, or every N pages.', popular:true },
-  { slug:'extract-pdf-pages', title:'Extract Pages',   group:'organize',     cat:'organize', status:'live',               icon:'extract',  output:'PDF',    desc:'Pull selected pages into a new file.' },
+  { slug:'extract-pdf-pages', title:'Extract Pages',   group:'organize',     cat:'organize', status:'beta',               icon:'extract',  output:'PDF',    desc:'Pull selected pages into a new file.' },
   { slug:'organize-pdf',      title:'Organize PDF',    group:'organize',     cat:'organize', status:'live',               icon:'grid',     output:'PDF',    desc:'Resequence and reorganize page structure visually.' },
   { slug:'compress-pdf',      title:'Compress PDF',    group:'organize',     cat:'organize', status:'live',               icon:'compress', output:'PDF',    desc:'Shrink file size without losing structure.', popular:true },
   { slug:'rotate-pdf',        title:'Rotate PDF',      group:'organize',     cat:'organize', status:'live',               icon:'rotate',   output:'PDF',    desc:'Rotate pages and normalize orientation.' },

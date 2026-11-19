@@ -6,6 +6,10 @@ _archive/
 *.egg-info/
 *.py[cod]
 .env
+.env.local
+.env.*.local
+node_modules/
+dist/
 
 .vercel
 .claude/settings.local.json
