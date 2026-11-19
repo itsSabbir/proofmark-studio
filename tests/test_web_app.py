@@ -1,13 +1,20 @@
 """Hub tests. Studio serves a React SPA shell; most UI assertions moved to
 Phase 3 (tool-stub routing) and Phase 7 (E2E click-through)."""
+import json
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
+from proofmark_studio import hub_app as hub_module
 from proofmark_studio.tool_registry import PDF_BASE, TEXT_BASE, TOOLS
 from web_app import APP_NAME, app
 
 
 client = TestClient(app)
+PRODUCTION_CONFIG = json.loads(
+    (Path(__file__).resolve().parents[1] / "vercel.json").read_text(encoding="utf-8")
+)
 
 
 def test_spa_shell_renders():
@@ -41,6 +48,25 @@ def test_hub_redirects_to_text_cleaner_on_8000():
     response = client.get("/go/text-inspection", follow_redirects=False)
     assert response.status_code in {302, 307}
     assert ":8000" in response.headers["location"]
+
+
+@pytest.mark.parametrize(
+    ("route", "setting", "same_origin_target"),
+    [
+        ("/go/proofmark-pdf", "PROOFMARK_PDF_BASE", "/pdf"),
+        ("/go/text-inspection", "PROOFMARK_TEXT_BASE", "/text"),
+    ],
+)
+def test_production_hub_redirects_have_valid_targets(
+    monkeypatch, route, setting, same_origin_target
+):
+    configured_base = PRODUCTION_CONFIG["env"][setting]
+    monkeypatch.setattr(hub_module, setting, configured_base)
+
+    response = client.get(route, follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == (configured_base or same_origin_target)
 
 
 def test_studio_map_api_exposes_spokes():
